@@ -1,0 +1,52 @@
+# Compound — self-hosted. Put this file in a folder, then choose a database in a .env
+# file next to it (see .env.example):
+#   DATABASE_URL=postgresql://user:password@host:5432/compound   your own Postgres
+#   COMPOSE_PROFILES=bundled-db                                   Postgres included here
+# Start:   docker compose up -d
+# Update:  docker compose pull && docker compose up -d
+
+services:
+  app:
+    image: ghcr.io/purdze/compound:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Your own DATABASE_URL wins; otherwise the bundled database below.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://compound:${POSTGRES_PASSWORD:-compound}@db:5432/compound?schema=public}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # Holds the generated encryption key. Back it up; see README.
+      - compound-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  db:
+    image: postgres:16-alpine
+    profiles: ["bundled-db"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: compound
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compound}
+      POSTGRES_DB: compound
+    volumes:
+      - compound-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compound -d compound"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  compound-data:
+  compound-db:

@@ -1,0 +1,17 @@
+# Local development override: builds the image from source and exposes the bundled
+# Postgres on localhost so `bun dev` can use it. Needs COMPOSE_PROFILES=bundled-db.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+services:
+  app:
+    image: compound:dev
+    build:
+      context: .
+      args:
+        APP_VERSION: dev
+    environment:
+      # .env's DATABASE_URL points at localhost for `bun dev`; the container needs "db".
+      DATABASE_URL: postgresql://compound:${POSTGRES_PASSWORD:-compound}@db:5432/compound?schema=public
+
+  db:
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"

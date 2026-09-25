@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets: never commit. .env.example documents the variables with placeholders.
+.env
+.env.*
+!.env.example
+*.pem
+
+# Generated secrets when running `bun dev` outside Docker
+.data/
+
+# Logs
+*.log
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

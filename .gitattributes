@@ -1,0 +1,3 @@
+# Store and check out every text file with LF endings, matching Prettier and the Linux
+# build, whatever the local git core.autocrlf setting.
+* text=auto eol=lf

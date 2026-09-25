@@ -1,0 +1,17 @@
+node_modules
+.next
+*.tsbuildinfo
+.git
+.github
+.vscode
+.idea
+tests
+*.md
+docker-compose*.yml
+
+# Secrets: never bake into an image
+.env
+.env.*
+!.env.example
+.data
+*.pem
