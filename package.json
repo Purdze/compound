@@ -17,7 +17,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@prisma/client": "6.19.3",
+    "@prisma/client": "7.10.0",
     "chart.js": "^4.5.1",
     "next": "15.5.26",
     "react": "^19.3.0",
