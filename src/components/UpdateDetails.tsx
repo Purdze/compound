@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import type { UpdateInfo } from "@/lib/updates";
 import { versionTag } from "@/lib/version";
-import { Button, ExternalLink } from "./ui";
+import { Button, ExternalLink, actionRowClass } from "./ui";
 
 const COMMAND = "docker compose pull && docker compose up -d";
 
@@ -18,7 +18,7 @@ export function UpdateDetails({ update, children }: { update: UpdateInfo; childr
 
   return (
     <>
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+      <div className={actionRowClass}>
         <span>
           Compound {versionTag(update.version)} is available. You&apos;re on {versionTag(update.current)}.
         </span>

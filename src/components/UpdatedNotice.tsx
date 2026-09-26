@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiRequest } from "@/lib/client-api";
 import { versionTag } from "@/lib/version";
-import { Button, WHATS_NEW, linkClass } from "./ui";
+import { Button, HeaderNotice, WHATS_NEW, actionRowClass, linkClass } from "./ui";
 
 export function UpdatedNotice({ version }: { version: string }) {
   const router = useRouter();
@@ -22,14 +22,16 @@ export function UpdatedNotice({ version }: { version: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-rule py-3 text-sm" role="status">
-      <span>Compound has been updated to {versionTag(version)}.</span>
-      <Link href={WHATS_NEW} className={linkClass}>
-        See what&apos;s new
-      </Link>
-      <Button variant="quiet" onClick={dismiss}>
-        Dismiss
-      </Button>
-    </div>
+    <HeaderNotice>
+      <div className={actionRowClass}>
+        <span>Compound has been updated to {versionTag(version)}.</span>
+        <Link href={WHATS_NEW} className={linkClass}>
+          See what&apos;s new
+        </Link>
+        <Button variant="quiet" onClick={dismiss}>
+          Dismiss
+        </Button>
+      </div>
+    </HeaderNotice>
   );
 }

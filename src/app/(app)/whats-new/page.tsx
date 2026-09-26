@@ -7,6 +7,8 @@ import { markSeen, readChangelog } from "@/lib/whats-new";
 
 export const dynamic = "force-dynamic";
 
+const headingNote = "font-sans text-sm font-normal";
+
 export default async function WhatsNewPage() {
   const { id: userId } = await requireOwner();
   await markSeen(userId);
@@ -32,8 +34,8 @@ export default async function WhatsNewPage() {
           <section key={r.version ?? "unreleased"} className="mt-10 border-t border-rule pt-10">
             <h2 className="flex flex-wrap items-baseline gap-x-3 text-xl">
               {r.version ? versionTag(r.version) : "Not yet released"}
-              {r.date && <span className="font-sans text-sm font-normal text-ink-muted">{dayLabel(r.date)}</span>}
-              {r.version === current && <span className="font-sans text-sm font-normal text-accent">Your version</span>}
+              {r.date && <span className={`${headingNote} text-ink-muted`}>{dayLabel(r.date)}</span>}
+              {r.version === current && <span className={`${headingNote} text-accent`}>Your version</span>}
             </h2>
             <div className="mt-4">
               <ChangelogBlocks blocks={r.blocks} />

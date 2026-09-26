@@ -11,6 +11,7 @@ import {
   Table,
   Td,
   Th,
+  actionRowClass,
   buttonClass,
   linkClass,
   lossClass,
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
       {result.status === "error" && (
         <div className="mt-10 max-w-2xl space-y-4">
           <Notice tone="problem">{result.message}</Notice>
-          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm text-ink-muted">
+          <div className={`${actionRowClass} text-sm text-ink-muted`}>
             <RefreshCountdown next={next} countdownLabel="Retrying" buttonLabel="Try again" />
             {(result.code === "BAD_KEY" || result.code === "KEY_UNREADABLE") && (
               <Link href={API_KEY_SETTINGS} className={linkClass}>
