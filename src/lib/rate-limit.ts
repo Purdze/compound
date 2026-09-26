@@ -52,5 +52,6 @@ export const limiters = {
   read: new RateLimiter(60, MINUTE),
   write: new RateLimiter(20, MINUTE),
   keySave: new RateLimiter(10, HOUR),
+  updateCheck: new RateLimiter(10, HOUR),
   failedSignIn: new RateLimiter(10, 15 * MINUTE),
 };

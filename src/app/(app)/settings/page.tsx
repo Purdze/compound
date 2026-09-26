@@ -3,6 +3,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { EraseData } from "@/components/settings/EraseData";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { SignOutEverywhere } from "@/components/settings/SignOutEverywhere";
+import { UpdateCheck } from "@/components/settings/UpdateCheck";
 import { LocalTime } from "@/components/LocalTime";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ExternalLink, HeadRow, Row, Section, Table, Td, Th } from "@/components/ui";
@@ -105,20 +106,21 @@ export default async function SettingsPage() {
 
         <Section
           title="Erase all data"
-          description="Removes your stored API key, presets and activity log from this Compound install. This can't be undone."
+          description="Removes your stored API key, presets, activity log, deposit history and daily values from this Compound install. This can't be undone."
         >
           <EraseData />
         </Section>
       </div>
-      <p className="border-t border-rule pt-6 text-sm text-ink-muted">
+      <div className="border-t border-rule pt-6 text-sm text-ink-muted">
         {version === DEV_VERSION ? (
           "Compound development build"
         ) : (
           <>
-            Compound {versionTag(version)} · <ExternalLink href={releaseNotesUrl(version)}>Release notes</ExternalLink>
+            Compound {versionTag(version)} · <ExternalLink href={releaseNotesUrl(version)}>Release notes</ExternalLink>{" "}
+            · <UpdateCheck />
           </>
         )}
-      </p>
+      </div>
     </div>
   );
 }

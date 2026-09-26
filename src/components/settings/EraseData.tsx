@@ -25,7 +25,10 @@ export function EraseData() {
     setPending(false);
     if (!res.ok) return setMessage({ tone: "problem", text: res.error });
     setTyped("");
-    setMessage({ tone: "success", text: "Erased. Your key, presets and activity log are gone." });
+    setMessage({
+      tone: "success",
+      text: "Erased. Your key, presets, activity log, deposit history and daily values are gone.",
+    });
     router.refresh();
   }
 
