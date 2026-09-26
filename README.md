@@ -206,6 +206,7 @@ src/lib/crypto.ts            AES-256-GCM seal/open for the Trading 212 key
 src/lib/secrets.ts           generates and loads /data/secrets.json
 src/lib/t212/                Trading 212 client (server-only), parsing, caching, transaction sync, daily value snapshots
 src/lib/deposits.ts          deposit totals, monthly figures, return and yearly rate
+src/lib/isa.ts               ISA allowance: yearly limit, tax year, allowance used
 src/lib/updates.ts           new-version check against GitHub Releases
 src/lib/whats-new.ts         the What's new page: reads the bundled CHANGELOG.md, tracks what the owner has seen
 .github/workflows/           CI and tagged releases to GHCR

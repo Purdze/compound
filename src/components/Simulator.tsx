@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/client-api";
+import { ISA_ALLOWANCE, ISA_MONTHLY, isaOverflow } from "@/lib/isa";
 import { NAME_MAX_LENGTH } from "@/lib/field-rules";
 import { compactGBP, wholeGBP } from "@/lib/format";
 import type { Preset } from "@/lib/presets";
@@ -10,12 +11,9 @@ import {
   LIMITS,
   ACCOUNTS,
   ACCOUNT_LABELS,
-  ISA_ALLOWANCE,
-  ISA_MONTHLY,
   MODES,
   MODE_LABELS,
   clampInput,
-  isaOverflow,
   roundToStep,
   simulate,
   type Account,
@@ -30,7 +28,6 @@ import { useAnimatedNumber } from "./useAnimatedNumber";
 
 type Props = {
   connected: boolean;
-  /** "isa" when the connected account is marked as an ISA in Settings. */
   defaultAccount: Account;
   initialPresets: Preset[];
   averageMonthly: number | null;
@@ -45,6 +42,7 @@ export function Simulator({ connected, defaultAccount, initialPresets, averageMo
   const result = useMemo(() => simulate(input), [input]);
   const { mode } = input;
   const view = describeResult(input, result);
+  const overflow = input.account === "isa" ? isaOverflow(result.monthlyContribution) : 0;
   const headline = useAnimatedNumber(view.value);
   const averageDeposit = averageMonthly !== null && averageMonthly > 0 ? averageMonthly : null;
 
@@ -185,11 +183,11 @@ export function Simulator({ connected, defaultAccount, initialPresets, averageMo
             )}
           </div>
           <p className="mt-4 max-w-xl text-sm text-ink-muted">{view.sentence}</p>
-          {input.account === "isa" && isaOverflow(result.monthlyContribution) > 0 && (
+          {overflow > 0 && (
             <p className="mt-2 max-w-xl text-sm text-accent-rust">
               {wholeGBP(result.monthlyContribution)} a month is over the {wholeGBP(ISA_ALLOWANCE)} yearly ISA allowance.{" "}
-              {wholeGBP(ISA_MONTHLY)} fits in the ISA; the other {wholeGBP(isaOverflow(result.monthlyContribution))}{" "}
-              would need a general account, where gains can be taxed.
+              {wholeGBP(ISA_MONTHLY)} fits in the ISA; the other {wholeGBP(overflow)} would need a general account,
+              where gains can be taxed.
             </p>
           )}
           {mode === "monthly" && averageDeposit !== null && !result.goalReachedByLumpSum && (

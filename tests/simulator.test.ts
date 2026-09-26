@@ -1,13 +1,6 @@
+import { ISA_MONTHLY, isaOverflow } from "../src/lib/isa";
 import { describe, expect, test } from "bun:test";
-import {
-  DEFAULT_INPUT,
-  ISA_MONTHLY,
-  LIMITS,
-  clampInput,
-  isaOverflow,
-  roundToStep,
-  simulate,
-} from "../src/lib/simulator";
+import { DEFAULT_INPUT, LIMITS, clampInput, roundToStep, simulate } from "../src/lib/simulator";
 
 describe("simulate", () => {
   test("defaults: £1.5M in 25 years at 10% needs about £1,130/month", () => {

@@ -19,3 +19,5 @@ export async function apiKeyStatus(userId: string): Promise<ApiKeyStatus> {
       }
     : { connected: false };
 }
+
+export const isIsaAccount = (status: ApiKeyStatus) => status.connected && status.isIsa;

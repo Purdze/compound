@@ -16,13 +16,6 @@ export const ACCOUNT_LABELS: Record<Account, string> = {
   isa: "ISA",
 };
 
-// UK Stocks & Shares ISA: new money per tax year. Update if the government changes it.
-export const ISA_ALLOWANCE = 20_000;
-export const ISA_MONTHLY = ISA_ALLOWANCE / 12;
-
-/** How much of a monthly amount doesn't fit in the ISA allowance. */
-export const isaOverflow = (monthly: number) => Math.max(0, monthly - ISA_MONTHLY);
-
 export type SimulatorInput = {
   mode: SimulatorMode;
   account: Account;

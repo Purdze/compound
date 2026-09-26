@@ -1,5 +1,5 @@
 import { Simulator } from "@/components/Simulator";
-import { apiKeyStatus } from "@/lib/api-key-status";
+import { apiKeyStatus, isIsaAccount } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { summariseDeposits } from "@/lib/deposits";
@@ -22,7 +22,7 @@ export default async function SimulatorPage() {
   return (
     <Simulator
       connected={key.connected}
-      defaultAccount={key.connected && key.isIsa ? "isa" : "general"}
+      defaultAccount={isIsaAccount(key) ? "isa" : "general"}
       initialPresets={presets.map(toPreset)}
       averageMonthly={averageMonthly}
     />

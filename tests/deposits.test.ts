@@ -1,13 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import {
-  annualisedReturn,
-  isaAllowance,
-  realReturn,
-  summariseDeposits,
-  taxYearStart,
-  transactionLabel,
-  valueHistory,
-} from "../src/lib/deposits";
+import { annualisedReturn, realReturn, summariseDeposits, transactionLabel, valueHistory } from "../src/lib/deposits";
+import { isaAllowance, taxYearStart } from "../src/lib/isa";
 import type { CashTransaction } from "../src/lib/t212/normalise";
 
 const tx = (type: string, amount: number, occurredAt: string, currency = "GBP"): CashTransaction => ({

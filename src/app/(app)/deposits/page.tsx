@@ -18,11 +18,10 @@ import {
   linkClass,
   lossClass,
 } from "@/components/ui";
-import { apiKeyStatus } from "@/lib/api-key-status";
+import { apiKeyStatus, isIsaAccount } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import {
   annualisedReturn,
-  isaAllowance,
   realReturn,
   summariseDeposits,
   transactionLabel,
@@ -33,7 +32,7 @@ import { dayLabel, money, monthLabel, signedMoney, signedPercent, wholeGBP } fro
 import { T212Error } from "@/lib/t212/client";
 import type { CashTransaction } from "@/lib/t212/normalise";
 import { getPortfolio } from "@/lib/t212/portfolio";
-import { ISA_ALLOWANCE } from "@/lib/simulator";
+import { ISA_ALLOWANCE, isaAllowance } from "@/lib/isa";
 import { readSnapshots } from "@/lib/t212/snapshots";
 import { depositHistory, type SyncError } from "@/lib/t212/transactions";
 
@@ -83,7 +82,7 @@ export default async function DepositsPage() {
         <DepositsView
           transactions={history.transactions}
           snapshots={snapshots}
-          isIsa={key.connected && key.isIsa}
+          isIsa={isIsaAccount(key)}
           totalValue={portfolio.status === "ok" ? portfolio.portfolio.totalValue : null}
           currency={
             portfolio.status === "ok"
