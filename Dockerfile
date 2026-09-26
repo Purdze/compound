@@ -16,7 +16,7 @@ COPY . .
 RUN bunx prisma generate && bun run build
 
 # ── Stage 3: minimal Node runtime ─────────────────────────────────────────────
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ARG APP_VERSION=dev
