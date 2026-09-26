@@ -68,4 +68,15 @@ describe("parseBody", () => {
     expect(await status(post({ "content-type": "application/json" }, "{nope"))).toBe(400);
     expect(await status(post({ "content-type": "application/json" }, '{"a":"x"}'))).toBe(400);
   });
+
+  test("shows a schema's own message, and the fallback for missing or wrong-typed fields", async () => {
+    const named = z.object({ name: z.string().min(3, "Name is too short.") });
+    const error = async (body: string) => {
+      const r = await parseBody(post({ "content-type": "application/json" }, body), named, "Enter a name.");
+      return "response" in r ? ((await r.response.json()) as { error: string }).error : null;
+    };
+    expect(await error('{"name":"ab"}')).toBe("Name is too short.");
+    expect(await error("{}")).toBe("Enter a name.");
+    expect(await error('{"name":5}')).toBe("Enter a name.");
+  });
 });

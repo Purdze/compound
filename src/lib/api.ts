@@ -79,5 +79,7 @@ export async function parseBody<S extends z.ZodTypeAny>(
   } catch {}
   const parsed = schema.safeParse(raw);
   if (parsed.success) return { data: parsed.data };
-  return { response: jsonError(400, parsed.error.issues[0]?.message ?? fallbackError) };
+  // A missing or wrong-typed field gets Zod's technical wording, so show our own instead.
+  const issue = parsed.error.issues[0];
+  return { response: jsonError(400, !issue || issue.code === "invalid_type" ? fallbackError : issue.message) };
 }

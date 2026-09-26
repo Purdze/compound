@@ -6,7 +6,7 @@ import { limiters } from "@/lib/rate-limit";
 import { invalidatePortfolio } from "@/lib/t212/portfolio";
 
 const body = z.object({
-  confirm: z.literal("erase", { errorMap: () => ({ message: "Type erase to confirm." }) }),
+  confirm: z.literal("erase", { error: "Type erase to confirm." }),
 });
 
 export async function DELETE(req: Request) {
