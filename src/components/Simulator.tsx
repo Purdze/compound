@@ -2,19 +2,22 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/client-api";
+import { ISA_ALLOWANCE, ISA_MONTHLY, isaOverflow } from "@/lib/isa";
 import { NAME_MAX_LENGTH } from "@/lib/field-rules";
 import { compactGBP, wholeGBP } from "@/lib/format";
 import type { Preset } from "@/lib/presets";
 import {
   DEFAULT_INPUT,
   LIMITS,
+  ACCOUNTS,
+  ACCOUNT_LABELS,
   MODES,
   MODE_LABELS,
   clampInput,
   roundToStep,
   simulate,
+  type Account,
   type SimulatorInput,
-  type SimulatorMode,
   type SimulatorResult,
 } from "@/lib/simulator";
 import type { PortfolioResult } from "@/lib/t212/portfolio";
@@ -25,12 +28,13 @@ import { useAnimatedNumber } from "./useAnimatedNumber";
 
 type Props = {
   connected: boolean;
+  defaultAccount: Account;
   initialPresets: Preset[];
   averageMonthly: number | null;
 };
 
-export function Simulator({ connected, initialPresets, averageMonthly }: Props) {
-  const [input, setInput] = useState<SimulatorInput>(DEFAULT_INPUT);
+export function Simulator({ connected, defaultAccount, initialPresets, averageMonthly }: Props) {
+  const [input, setInput] = useState<SimulatorInput>({ ...DEFAULT_INPUT, account: defaultAccount });
   const [presets, setPresets] = useState(initialPresets);
   const [notice, setNotice] = useState<NoticeMessage | null>(null);
   const [prefilling, setPrefilling] = useState(false);
@@ -38,6 +42,7 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
   const result = useMemo(() => simulate(input), [input]);
   const { mode } = input;
   const view = describeResult(input, result);
+  const overflow = input.account === "isa" ? isaOverflow(result.monthlyContribution) : 0;
   const headline = useAnimatedNumber(view.value);
   const averageDeposit = averageMonthly !== null && averageMonthly > 0 ? averageMonthly : null;
 
@@ -81,7 +86,22 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
 
       <div className="mt-10 grid gap-12 border-t border-rule pt-10 lg:grid-cols-[20rem_1fr]">
         <div className="space-y-7">
-          <ModeSwitch mode={mode} onChange={(m) => update({ mode: m })} />
+          <Segmented
+            legend="Work out"
+            name="simulator-mode"
+            options={MODES}
+            labels={MODE_LABELS}
+            value={mode}
+            onChange={(m) => update({ mode: m })}
+          />
+          <Segmented
+            legend="Investing in"
+            name="simulator-account"
+            options={ACCOUNTS}
+            labels={ACCOUNT_LABELS}
+            value={input.account}
+            onChange={(account) => update({ account })}
+          />
           <Slider
             label="Current age"
             {...LIMITS.currentAge}
@@ -115,6 +135,7 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
               {...LIMITS.monthly}
               value={mode === "monthly" ? Math.round(result.monthlyContribution) : input.monthly}
               locked={mode === "monthly"}
+              mark={input.account === "isa" ? { value: ISA_MONTHLY, label: "ISA limit" } : undefined}
               format={wholeGBP}
               onChange={set("monthly")}
             />
@@ -162,6 +183,13 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
             )}
           </div>
           <p className="mt-4 max-w-xl text-sm text-ink-muted">{view.sentence}</p>
+          {overflow > 0 && (
+            <p className="mt-2 max-w-xl text-sm text-accent-rust">
+              {wholeGBP(result.monthlyContribution)} a month is over the {wholeGBP(ISA_ALLOWANCE)} yearly ISA allowance.{" "}
+              {wholeGBP(ISA_MONTHLY)} fits in the ISA; the other {wholeGBP(overflow)} would need a general account,
+              where gains can be taxed.
+            </p>
+          )}
           {mode === "monthly" && averageDeposit !== null && !result.goalReachedByLumpSum && (
             <p className="mt-2 max-w-xl text-sm text-ink-muted">
               Your deposits average {wholeGBP(averageDeposit)} a month
@@ -321,23 +349,37 @@ function presetSummary(p: Preset): string {
   return `${compactGBP(p.goalAmount)} by ${p.targetAge}`;
 }
 
-function ModeSwitch({ mode, onChange }: { mode: SimulatorMode; onChange: (mode: SimulatorMode) => void }) {
+function Segmented<T extends string>({
+  legend,
+  name,
+  options,
+  labels,
+  value,
+  onChange,
+}: {
+  legend: string;
+  name: string;
+  options: readonly T[];
+  labels: Record<T, string>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
   return (
     <fieldset>
-      <legend className="text-sm text-ink-muted">Work out</legend>
+      <legend className="text-sm text-ink-muted">{legend}</legend>
       <div className="mt-2 flex rounded-sm border border-rule">
-        {MODES.map((m) => (
-          <label key={m} className="flex-1 border-l border-rule first:border-l-0">
+        {options.map((o) => (
+          <label key={o} className="flex-1 border-l border-rule first:border-l-0">
             <input
               type="radio"
-              name="simulator-mode"
-              value={m}
-              checked={mode === m}
-              onChange={() => onChange(m)}
+              name={name}
+              value={o}
+              checked={value === o}
+              onChange={() => onChange(o)}
               className="peer sr-only"
             />
             <span className="block cursor-pointer px-2 py-2 text-center text-sm text-ink-muted peer-checked:bg-accent peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-              {MODE_LABELS[m]}
+              {labels[o]}
             </span>
           </label>
         ))}
@@ -426,6 +468,7 @@ function Presets({
                 <span className="font-medium">{p.name}</span>
                 <span className="ml-3 text-sm text-ink-muted tabular-nums">
                   {presetSummary(p)} · from {p.currentAge} · {p.rate}% · {compactGBP(p.lumpSum)} now
+                  {p.account === "isa" && " · ISA"}
                 </span>
               </div>
               <div className="flex gap-4">

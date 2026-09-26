@@ -42,6 +42,18 @@ export async function POST(req: Request) {
   return jsonOk({ connected: true, warning });
 }
 
+const settings = z.object({ isIsa: z.boolean() });
+
+export async function PATCH(req: Request) {
+  const g = await guard(req, limiters.write);
+  if ("response" in g) return g.response;
+  const b = await parseBody(req, settings, "Choose whether this account is an ISA.");
+  if ("response" in b) return b.response;
+  const { count } = await db.apiKey.updateMany({ where: { userId: g.userId }, data: b.data });
+  if (count === 0) return jsonError(404, "Connect a Trading 212 key first.");
+  return jsonOk(b.data);
+}
+
 export async function DELETE(req: Request) {
   const g = await guard(req, limiters.write);
   if ("response" in g) return g.response;

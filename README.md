@@ -3,7 +3,7 @@
 A calm, self-hosted viewer for your Trading 212 portfolio, with a long-term goal simulator. You run your own copy on your own machine, so your Trading 212 key is stored only there and only ever sent to Trading 212.
 
 - **Dashboard:** your portfolio's total value, cash, invested amount and gain, plus every position. Updates every minute, or on demand.
-- **Deposits:** how much you've put in and taken out, what it's grown to (overall and as a yearly rate), a chart of its value against what you've put in, and a month-by-month chart. Needs the History - Transactions permission.
+- **Deposits:** how much you've put in and taken out, how much of this year's ISA allowance you've used, what it's grown to (overall and as a yearly rate), a chart of its value against what you've put in, and a month-by-month chart. Needs the History - Transactions permission.
 - **Goal simulator:** how much to invest each month to reach a goal by a given age, with a chart you can adjust live and presets you can save. Compares the goal against what you actually deposit each month. Works without connecting Trading 212.
 - **VUAG price** in the header, if you hold Vanguard's S&P 500 fund.
 - **Key activity:** every call Compound makes to Trading 212 with your key, listed in Settings.
@@ -206,6 +206,7 @@ src/lib/crypto.ts            AES-256-GCM seal/open for the Trading 212 key
 src/lib/secrets.ts           generates and loads /data/secrets.json
 src/lib/t212/                Trading 212 client (server-only), parsing, caching, transaction sync, daily value snapshots
 src/lib/deposits.ts          deposit totals, monthly figures, return and yearly rate
+src/lib/isa.ts               ISA allowance: yearly limit, tax year, allowance used
 src/lib/updates.ts           new-version check against GitHub Releases
 src/lib/whats-new.ts         the What's new page: reads the bundled CHANGELOG.md, tracks what the owner has seen
 .github/workflows/           CI and tagged releases to GHCR

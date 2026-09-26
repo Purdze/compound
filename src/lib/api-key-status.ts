@@ -1,12 +1,23 @@
 import "server-only";
 import { db } from "@/lib/db";
 
-export type ApiKeyStatus = { connected: true; createdAt: string; lastUsedAt: string | null } | { connected: false };
+export type ApiKeyStatus =
+  { connected: true; createdAt: string; lastUsedAt: string | null; isIsa: boolean } | { connected: false };
 
 /** Connection facts only; never anything derived from the key itself. */
 export async function apiKeyStatus(userId: string): Promise<ApiKeyStatus> {
-  const key = await db.apiKey.findUnique({ where: { userId }, select: { createdAt: true, lastUsedAt: true } });
+  const key = await db.apiKey.findUnique({
+    where: { userId },
+    select: { createdAt: true, lastUsedAt: true, isIsa: true },
+  });
   return key
-    ? { connected: true, createdAt: key.createdAt.toISOString(), lastUsedAt: key.lastUsedAt?.toISOString() ?? null }
+    ? {
+        connected: true,
+        createdAt: key.createdAt.toISOString(),
+        lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
+        isIsa: key.isIsa,
+      }
     : { connected: false };
 }
+
+export const isIsaAccount = (status: ApiKeyStatus) => status.connected && status.isIsa;

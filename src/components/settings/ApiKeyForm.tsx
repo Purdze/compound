@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { ApiKeyStatus } from "@/lib/api-key-status";
 import { apiRequest } from "@/lib/client-api";
 import { LocalTime } from "../LocalTime";
-import { Button, ExternalLink, Field, Notice, T212_APP_URL, inputClass, type NoticeMessage } from "../ui";
+import { Button, Checkbox, ExternalLink, Field, Notice, T212_APP_URL, inputClass, type NoticeMessage } from "../ui";
 
 // Names exactly as Trading 212 shows them, and in its order within each group, so they can be
 // matched line by line. Descriptions come from the scope each Trading 212 API endpoint requires.
@@ -71,6 +71,16 @@ export function ApiKeyForm({ status }: { status: ApiKeyStatus }) {
     router.refresh();
   }
 
+  async function setIsa(isIsa: boolean) {
+    setMessage(null);
+    const res = await apiRequest("/api/keys", "That couldn't be saved. Try again.", {
+      method: "PATCH",
+      body: { isIsa },
+    });
+    if (!res.ok) return setMessage({ tone: "problem", text: res.error });
+    router.refresh();
+  }
+
   async function remove() {
     setMessage(null);
     setConfirmRemove(false);
@@ -100,6 +110,15 @@ export function ApiKeyForm({ status }: { status: ApiKeyStatus }) {
               )}
             </p>
           </Notice>
+        )}
+
+        {status.connected && (
+          <Checkbox
+            checked={status.isIsa}
+            onChange={setIsa}
+            label="This is a Stocks & Shares ISA"
+            hint="Shows how much of this tax year's ISA allowance you've used, and plans within it in the simulator."
+          />
         )}
 
         {message && <Notice tone={message.tone}>{message.text}</Notice>}

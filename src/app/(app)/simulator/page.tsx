@@ -1,5 +1,5 @@
 import { Simulator } from "@/components/Simulator";
-import { apiKeyStatus } from "@/lib/api-key-status";
+import { apiKeyStatus, isIsaAccount } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { summariseDeposits } from "@/lib/deposits";
@@ -19,5 +19,12 @@ export default async function SimulatorPage() {
   const averageMonthly =
     history.status === "ready" ? summariseDeposits(history.transactions, "GBP").averageMonthly : null;
 
-  return <Simulator connected={key.connected} initialPresets={presets.map(toPreset)} averageMonthly={averageMonthly} />;
+  return (
+    <Simulator
+      connected={key.connected}
+      defaultAccount={isIsaAccount(key) ? "isa" : "general"}
+      initialPresets={presets.map(toPreset)}
+      averageMonthly={averageMonthly}
+    />
+  );
 }

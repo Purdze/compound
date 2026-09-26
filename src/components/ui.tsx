@@ -93,6 +93,33 @@ export function Field({ label, hint, children }: { label: string; hint?: ReactNo
   );
 }
 
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  hint: ReactNode;
+}) {
+  return (
+    <label className="flex items-start gap-3 text-sm">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-1 h-4 w-4 accent-accent"
+      />
+      <span>
+        <span className="block font-medium">{label}</span>
+        <span className="block text-ink-muted">{hint}</span>
+      </span>
+    </label>
+  );
+}
+
 export const inputClass =
   "w-full rounded-sm border border-rule bg-paper px-3 py-2 text-base text-ink placeholder:text-ink-muted/70 focus:border-ink-muted";
 

@@ -4,6 +4,9 @@ What's changed in each version of Compound. To update, run `docker compose pull 
 
 ## Unreleased
 
+- Mark your account as a Stocks & Shares ISA in **Settings** to see how much of this tax year's £20,000 allowance you've used, on the Deposits page.
+- The goal simulator can plan within an ISA, and says when the monthly amount is more than the allowance fits.
+
 ## 0.3.0 (2026-09-26)
 
 - The goal simulator can now work out any of three things: the monthly amount, what you'll end up with, or the age you'll reach your goal. Pick one under **Work out** and the other sliders become your inputs. Saved presets remember which.

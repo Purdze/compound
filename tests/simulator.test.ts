@@ -1,3 +1,4 @@
+import { ISA_MONTHLY, isaOverflow } from "../src/lib/isa";
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_INPUT, LIMITS, clampInput, roundToStep, simulate } from "../src/lib/simulator";
 
@@ -44,6 +45,7 @@ describe("clampInput", () => {
   test("clamps into slider ranges", () => {
     const c = clampInput({
       mode: "value",
+      account: "isa",
       currentAge: 5,
       targetAge: 200,
       goalAmount: 1,
@@ -53,6 +55,7 @@ describe("clampInput", () => {
     });
     expect(c).toEqual({
       mode: "value",
+      account: "isa",
       currentAge: 18,
       targetAge: 90,
       goalAmount: 50_000,
@@ -114,4 +117,11 @@ test("roundToStep lands on the nearest slider step", () => {
   expect(roundToStep(15, LIMITS.monthly)).toBe(25);
   expect(roundToStep(449, LIMITS.monthly)).toBe(450);
   expect(roundToStep(15_030, LIMITS.lumpSum)).toBe(15_000);
+});
+
+test("isaOverflow is what doesn't fit in the £20,000 yearly allowance", () => {
+  expect(ISA_MONTHLY).toBeCloseTo(1_666.67, 2);
+  expect(isaOverflow(1_000)).toBe(0);
+  expect(isaOverflow(ISA_MONTHLY)).toBe(0);
+  expect(isaOverflow(2_500)).toBeCloseTo(833.33, 2);
 });
