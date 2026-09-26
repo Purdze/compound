@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import type { SessionBinding } from "@/lib/session";
 
-const OWNER_ID = "owner";
+export const OWNER_ID = "owner";
 
 export function ownerRow() {
   return db.user.findUnique({ where: { id: OWNER_ID } });

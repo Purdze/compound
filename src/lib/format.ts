@@ -53,3 +53,17 @@ export function dateTime(iso: string | Date): string {
     minute: "2-digit",
   });
 }
+
+export function signedPercent(fraction: number): string {
+  const s = `${Math.abs(fraction * 100).toFixed(1)}%`;
+  return fraction < 0 ? `−${s}` : fraction > 0 ? `+${s}` : s;
+}
+
+const utcDate = (iso: string, parts: Intl.DateTimeFormatOptions) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { ...parts, timeZone: "UTC" });
+
+/** `2026-09` → `Sep 2026`. */
+export const monthLabel = (month: string) => utcDate(`${month}-01`, { month: "short", year: "numeric" });
+
+/** `2026-09-26` → `26 Sep 2026`. */
+export const dayLabel = (day: string) => utcDate(day, { day: "numeric", month: "short", year: "numeric" });

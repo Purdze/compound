@@ -17,6 +17,8 @@ export async function DELETE(req: Request) {
 
   const where = { userId: g.userId };
   await db.$transaction([
+    db.cashTransaction.deleteMany({ where }),
+    db.valueSnapshot.deleteMany({ where }),
     db.apiKey.deleteMany({ where }),
     db.apiKeyUsageLog.deleteMany({ where }),
     db.calculatorPreset.deleteMany({ where }),

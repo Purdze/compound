@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { displayTicker, findVuag, normalisePositions, normaliseSummary } from "../src/lib/t212/normalise";
+import {
+  displayTicker,
+  findVuag,
+  normalisePositions,
+  normaliseSummary,
+  normaliseTransactions,
+} from "../src/lib/t212/normalise";
 
 describe("normalisePositions", () => {
   test("reads the current nested shape", () => {
@@ -88,4 +94,41 @@ test("displayTicker strips exchange and type suffixes", () => {
   expect(displayTicker("VUAGl_EQ")).toBe("VUAG");
   expect(displayTicker("AAPL_US_EQ")).toBe("AAPL");
   expect(displayTicker("BRK_B_US_EQ")).toBe("BRK_B");
+});
+
+describe("normaliseTransactions", () => {
+  const deposit = {
+    type: "DEPOSIT",
+    amount: 250,
+    currency: "GBP",
+    reference: "0b6f3c1e-2f7a-4c1d-9a51-7f1f9d3c2e10",
+    dateTime: "2026-09-01T09:30:00.000Z",
+  };
+
+  test("reads items and strips the API prefix from the next page", () => {
+    const page = normaliseTransactions({
+      items: [deposit],
+      nextPagePath: "/api/v0/equity/history/transactions?limit=50&cursor=abc",
+    });
+    expect(page).toEqual({
+      items: [
+        { reference: deposit.reference, type: "DEPOSIT", amount: 250, currency: "GBP", occurredAt: deposit.dateTime },
+      ],
+      nextPath: "/equity/history/transactions?limit=50&cursor=abc",
+    });
+  });
+
+  test("skips unreadable items and ends on a null or foreign next page", () => {
+    const page = normaliseTransactions({
+      items: [deposit, { ...deposit, amount: "250" }, { ...deposit, dateTime: "not a date" }, null],
+      nextPagePath: "/api/v0/equity/orders",
+    });
+    expect(page.items).toHaveLength(1);
+    expect(page.nextPath).toBeNull();
+    expect(normaliseTransactions({ items: [], nextPagePath: null }).nextPath).toBeNull();
+  });
+
+  test("throws without items", () => {
+    expect(() => normaliseTransactions([])).toThrow();
+  });
 });

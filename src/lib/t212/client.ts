@@ -75,6 +75,21 @@ export async function t212Get<T>(creds: T212Credentials, path: string, userId: s
   }
 }
 
+/** Any failure as a T212Error, so only fixed messages reach users and logs. */
+export function asT212Error(err: unknown): T212Error {
+  return err instanceof T212Error ? err : new T212Error("BAD_RESPONSE");
+}
+
+/** Runs a parser over a Trading 212 response, turning a shape it can't read into BAD_RESPONSE. */
+export function parseResponse<T>(parse: () => T): T {
+  try {
+    return parse();
+  } catch (err) {
+    console.warn("[t212] unexpected response shape:", err instanceof Error ? err.message : "unknown");
+    throw new T212Error("BAD_RESPONSE");
+  }
+}
+
 async function audit(userId: string, endpoint: string, status: number, ok: boolean) {
   try {
     await db.apiKeyUsageLog.create({ data: { userId, endpoint, status } });
@@ -93,7 +108,16 @@ export async function storeUserCredentials(userId: string, creds: T212Credential
   await db.apiKey.upsert({
     where: { userId },
     create: { userId, ...data },
-    update: { ...data, createdAt: new Date(), lastUsedAt: null },
+    // A new key may belong to a different account, so its histories start again.
+    update: {
+      ...data,
+      createdAt: new Date(),
+      lastUsedAt: null,
+      transactionsSyncedAt: null,
+      transactionsError: null,
+      cashTransactions: { deleteMany: {} },
+      valueSnapshots: { deleteMany: {} },
+    },
   });
 }
 
