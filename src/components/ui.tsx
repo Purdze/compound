@@ -2,6 +2,9 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "danger" | "quiet";
 
+export const API_KEY_SETTINGS = "/settings#api-key";
+export const T212_APP_URL = "https://app.trading212.com/";
+
 export const linkClass =
   "text-ink-muted underline underline-offset-4 decoration-rule hover:text-ink hover:decoration-ink-muted";
 
@@ -136,4 +139,26 @@ export function Th({ children, ...rest }: CellProps) {
 
 export function Td({ children, ...rest }: CellProps) {
   return <td className={cellClass(rest)}>{children}</td>;
+}
+
+export const lossClass = (value: number) => (value < 0 ? "text-accent-rust" : "");
+
+export function Stat({
+  label,
+  value,
+  note,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  className?: string;
+}) {
+  return (
+    <div className="md:px-8 md:first:pl-0">
+      <dt className="text-sm text-ink-muted">{label}</dt>
+      <dd className={`figure mt-1 text-xl ${className}`}>{value}</dd>
+      {note && <dd className="mt-1 text-sm text-ink-muted">{note}</dd>}
+    </div>
+  );
 }

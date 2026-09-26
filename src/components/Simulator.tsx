@@ -12,7 +12,13 @@ import { Slider } from "./Slider";
 import { Button, HeadRow, Notice, Row, Table, Td, Th, inputClass, type NoticeMessage } from "./ui";
 import { useAnimatedNumber } from "./useAnimatedNumber";
 
-export function Simulator({ connected, initialPresets }: { connected: boolean; initialPresets: Preset[] }) {
+type Props = {
+  connected: boolean;
+  initialPresets: Preset[];
+  averageMonthly: number | null;
+};
+
+export function Simulator({ connected, initialPresets, averageMonthly }: Props) {
   const [input, setInput] = useState<SimulatorInput>(DEFAULT_INPUT);
   const [presets, setPresets] = useState(initialPresets);
   const [notice, setNotice] = useState<NoticeMessage | null>(null);
@@ -141,6 +147,16 @@ export function Simulator({ connected, initialPresets }: { connected: boolean; i
               </>
             )}
           </p>
+          {averageMonthly !== null && averageMonthly > 0 && !result.goalReachedByLumpSum && (
+            <p className="mt-2 max-w-xl text-sm text-ink-muted">
+              Your deposits average {wholeGBP(averageMonthly)} a month
+              {averageMonthly >= result.monthlyContribution ? (
+                <span className="text-accent">: enough for this goal.</span>
+              ) : (
+                <>: {wholeGBP(result.monthlyContribution - averageMonthly)} a month short of this goal.</>
+              )}
+            </p>
+          )}
 
           <div className="mt-10">
             <SimulatorChart series={result.series} goal={input.goalAmount} />

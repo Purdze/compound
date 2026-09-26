@@ -1,7 +1,15 @@
 import "server-only";
 import { TtlCache } from "@/lib/cache";
-import { T212Error, type T212Credentials, type T212ErrorCode, loadUserCredentials, t212Get } from "./client";
+import {
+  asT212Error,
+  type T212Credentials,
+  type T212ErrorCode,
+  loadUserCredentials,
+  parseResponse,
+  t212Get,
+} from "./client";
 import { findVuag, normalisePositions, normaliseSummary, type Portfolio } from "./normalise";
+import { recordSnapshot } from "./snapshots";
 
 export type PortfolioResult =
   | { status: "ok"; portfolio: Portfolio }
@@ -17,7 +25,7 @@ const TTL_MS = 60_000;
 const portfolioCache = new TtlCache<PortfolioResult>(TTL_MS);
 
 function toErrorResult(err: unknown): PortfolioResult {
-  const e = err instanceof T212Error ? err : new T212Error("BAD_RESPONSE");
+  const e = asT212Error(err);
   return { status: "error", code: e.code, message: e.message };
 }
 
@@ -26,16 +34,11 @@ async function fetchPortfolio(creds: T212Credentials, userId: string): Promise<P
     t212Get<unknown>(creds, "/equity/account/summary", userId),
     t212Get<unknown>(creds, "/equity/positions", userId),
   ]);
-  try {
-    return {
-      ...normaliseSummary(summaryRaw),
-      positions: normalisePositions(positionsRaw),
-      fetchedAt: new Date().toISOString(),
-    };
-  } catch (err) {
-    console.warn("[t212] unexpected response shape:", err instanceof Error ? err.message : "unknown");
-    throw new T212Error("BAD_RESPONSE");
-  }
+  return parseResponse(() => ({
+    ...normaliseSummary(summaryRaw),
+    positions: normalisePositions(positionsRaw),
+    fetchedAt: new Date().toISOString(),
+  }));
 }
 
 export function getPortfolio(userId: string): Promise<PortfolioResult> {
@@ -43,7 +46,9 @@ export function getPortfolio(userId: string): Promise<PortfolioResult> {
     try {
       const creds = await loadUserCredentials(userId);
       if (!creds) return { status: "no-key" };
-      return { status: "ok", portfolio: await fetchPortfolio(creds, userId) };
+      const portfolio = await fetchPortfolio(creds, userId);
+      await recordSnapshot(userId, portfolio);
+      return { status: "ok", portfolio };
     } catch (err) {
       return toErrorResult(err);
     }

@@ -2,21 +2,31 @@ import Link from "next/link";
 import { Greeting } from "@/components/Greeting";
 import { LocalTime } from "@/components/LocalTime";
 import { RefreshCountdown } from "@/components/RefreshCountdown";
-import { HeadRow, Notice, Row, Table, Td, Th, buttonClass, linkClass } from "@/components/ui";
+import {
+  API_KEY_SETTINGS,
+  HeadRow,
+  Notice,
+  Row,
+  Stat,
+  Table,
+  Td,
+  Th,
+  buttonClass,
+  linkClass,
+  lossClass,
+} from "@/components/ui";
 import { requireOwner } from "@/lib/auth";
-import { money, quantity, signedMoney } from "@/lib/format";
-import { displayTicker, type Portfolio } from "@/lib/t212/normalise";
+import { realReturn, summariseDeposits } from "@/lib/deposits";
+import { money, quantity, signedMoney, signedPercent } from "@/lib/format";
+import { displayTicker, type CashTransaction, type Portfolio } from "@/lib/t212/normalise";
 import { getPortfolio, nextPortfolioRefresh } from "@/lib/t212/portfolio";
+import { depositHistory } from "@/lib/t212/transactions";
 
 export const dynamic = "force-dynamic";
 
-const API_KEY_SETTINGS = "/settings#api-key";
-
-const lossClass = (value: number) => (value < 0 ? "text-accent-rust" : "");
-
 export default async function DashboardPage() {
   const { id: userId, name } = await requireOwner();
-  const result = await getPortfolio(userId);
+  const [result, history] = await Promise.all([getPortfolio(userId), depositHistory(userId)]);
   const next = nextPortfolioRefresh(userId);
 
   return (
@@ -66,12 +76,23 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {result.status === "ok" && <PortfolioView portfolio={result.portfolio} />}
+      {result.status === "ok" && (
+        <PortfolioView
+          portfolio={result.portfolio}
+          transactions={history.status === "ready" ? history.transactions : null}
+        />
+      )}
     </div>
   );
 }
 
-function PortfolioView({ portfolio: p }: { portfolio: Portfolio }) {
+function PortfolioView({
+  portfolio: p,
+  transactions,
+}: {
+  portfolio: Portfolio;
+  transactions: CashTransaction[] | null;
+}) {
   const cur = p.accountCurrency;
   const cash = p.cash.available + p.cash.reservedForOrders + p.cash.inPies;
   return (
@@ -93,6 +114,7 @@ function PortfolioView({ portfolio: p }: { portfolio: Portfolio }) {
             className={lossClass(p.unrealisedProfitLoss)}
           />
         </dl>
+        {transactions && transactions.length > 0 && <DepositsLine portfolio={p} transactions={transactions} />}
       </section>
 
       <section className="pt-10">
@@ -144,22 +166,21 @@ function PortfolioView({ portfolio: p }: { portfolio: Portfolio }) {
   );
 }
 
-function Stat({
-  label,
-  value,
-  note,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  note?: string;
-  className?: string;
-}) {
+function DepositsLine({ portfolio: p, transactions }: { portfolio: Portfolio; transactions: CashTransaction[] }) {
+  const cur = p.accountCurrency;
+  const { netContributed } = summariseDeposits(transactions, cur);
+  const ret = realReturn(p.totalValue, netContributed);
   return (
-    <div className="md:px-8 md:first:pl-0">
-      <dt className="text-sm text-ink-muted">{label}</dt>
-      <dd className={`figure mt-1 text-xl ${className}`}>{value}</dd>
-      {note && <dd className="mt-1 text-sm text-ink-muted">{note}</dd>}
-    </div>
+    <p className="mt-8 text-sm text-ink-muted">
+      You&apos;ve put in {money(netContributed, cur)} ·{" "}
+      <span className={lossClass(ret.amount)}>
+        {signedMoney(ret.amount, cur)}
+        {ret.pct !== null && ` (${signedPercent(ret.pct)})`}
+      </span>{" "}
+      overall ·{" "}
+      <Link href="/deposits" className={linkClass}>
+        See deposits
+      </Link>
+    </p>
   );
 }

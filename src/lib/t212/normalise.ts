@@ -87,6 +87,38 @@ export function normaliseSummary(raw: unknown): Omit<Portfolio, "positions" | "f
   };
 }
 
+export type CashTransaction = {
+  reference: string;
+  type: string;
+  amount: number;
+  currency: string;
+  occurredAt: string;
+};
+
+export type TransactionPage = { items: CashTransaction[]; nextPath: string | null };
+
+/**
+ * `/equity/history/transactions` returns `{ items, nextPagePath }`, newest first. `nextPagePath`
+ * includes the `/api/v0` prefix; it's returned without it, and only if it stays on this endpoint.
+ */
+export function normaliseTransactions(raw: unknown): TransactionPage {
+  if (!isObj(raw) || !Array.isArray(raw.items)) throw new Error("transactions: expected { items }");
+  const items: CashTransaction[] = [];
+
+  for (const item of raw.items) {
+    if (!isObj(item)) continue;
+    const reference = str(item.reference);
+    const type = str(item.type);
+    const amount = num(item.amount);
+    const occurredAt = str(item.dateTime);
+    if (!reference || !type || amount === undefined || !occurredAt || Number.isNaN(Date.parse(occurredAt))) continue;
+    items.push({ reference, type, amount, currency: str(item.currency) ?? "GBP", occurredAt });
+  }
+
+  const next = str(raw.nextPagePath)?.replace(/^\/api\/v\d+/, "");
+  return { items, nextPath: next?.startsWith("/equity/history/transactions?") ? next : null };
+}
+
 /** VUAG trades on the LSE as e.g. `VUAGl_EQ`. */
 export function findVuag(positions: Position[]): Position | undefined {
   return positions.find((p) => /^VUAG[a-z]?_EQ$/i.test(p.ticker));

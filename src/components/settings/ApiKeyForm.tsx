@@ -5,17 +5,18 @@ import { useState } from "react";
 import type { ApiKeyStatus } from "@/lib/api-key-status";
 import { apiRequest } from "@/lib/client-api";
 import { LocalTime } from "../LocalTime";
-import { Button, ExternalLink, Field, Notice, inputClass, type NoticeMessage } from "../ui";
+import { Button, ExternalLink, Field, Notice, T212_APP_URL, inputClass, type NoticeMessage } from "../ui";
 
 // Names exactly as Trading 212 shows them, and in its order within each group, so they can be
 // matched line by line. Descriptions come from the scope each Trading 212 API endpoint requires.
 const PERMISSION_GROUPS = [
   {
     title: "Turn on",
-    note: "All Compound needs to show your portfolio.",
+    note: "What Compound reads to show your portfolio and deposits.",
     items: [
       ["Account data", "Your cash balance and account details."],
       ["Portfolio", "Your open positions and what they're worth."],
+      ["History - Transactions", "Your deposits and withdrawals, for the Deposits page."],
     ],
   },
   {
@@ -25,7 +26,6 @@ const PERMISSION_GROUPS = [
       ["History", "Exports your account history as CSV reports."],
       ["History - Dividends", "Dividends you've been paid."],
       ["History - Orders", "Orders you've placed in the past."],
-      ["History - Transactions", "Deposits, withdrawals and other cash movements."],
       ["Metadata", "The instruments and exchanges Trading 212 offers."],
       ["Orders - Read", "Orders waiting to be filled."],
       ["Pies - Read", "Your pies and their settings."],
@@ -133,8 +133,8 @@ export function ApiKeyForm({ status }: { status: ApiKeyStatus }) {
           <div className="text-sm">
             <ol className="list-decimal space-y-1 pl-5 text-ink-muted">
               <li>
-                Sign in at <ExternalLink href="https://app.trading212.com/">app.trading212.com</ExternalLink> and open
-                API (Beta). In the mobile app it&apos;s under Settings.
+                Sign in at <ExternalLink href={T212_APP_URL}>app.trading212.com</ExternalLink> and open API (Beta). In
+                the mobile app it&apos;s under Settings.
               </li>
               <li>Choose Generate API key and give it a name such as “Compound”.</li>
               <li>Set the permissions as below.</li>

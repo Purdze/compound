@@ -5,5 +5,6 @@ export const colors = {
   ink: "#1C2B3A",
   inkMuted: "#5B6B75",
   accent: "#3D5A45",
+  accentRust: "#A8442E",
   rule: "#D8D2C4",
 } as const;

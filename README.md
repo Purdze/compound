@@ -3,7 +3,8 @@
 A calm, self-hosted viewer for your Trading 212 portfolio, with a long-term goal simulator. You run your own copy on your own machine, so your Trading 212 key is stored only there and only ever sent to Trading 212.
 
 - **Dashboard:** your portfolio's total value, cash, invested amount and gain, plus every position. Updates every minute, or on demand.
-- **Goal simulator:** how much to invest each month to reach a goal by a given age, with a chart you can adjust live and presets you can save. Works without connecting Trading 212.
+- **Deposits:** how much you've put in and taken out, what it's grown to (overall and as a yearly rate), a chart of its value against what you've put in, and a month-by-month chart. Needs the History - Transactions permission.
+- **Goal simulator:** how much to invest each month to reach a goal by a given age, with a chart you can adjust live and presets you can save. Compares the goal against what you actually deposit each month. Works without connecting Trading 212.
 - **VUAG price** in the header, if you hold Vanguard's S&P 500 fund.
 - **Key activity:** every call Compound makes to Trading 212 with your key, listed in Settings.
 
@@ -41,7 +42,7 @@ You need Docker with Compose 2.24 or newer. Any Linux homelab, NAS, or a Raspber
    ```
    If it doesn't come up, `docker compose logs app` says what's missing.
 4. Open `http://<your-server>:3000` straight away and choose your name and a password.
-5. Connect Trading 212. The next screen walks you through creating a key in the Trading 212 app. Turn on **Account data and Portfolio**, and keep **Orders - Execute** and **Pies - Write** off. The other read-only permissions are optional; future versions of Compound can use them. You can skip this and do it later in **Settings**.
+5. Connect Trading 212. The next screen walks you through creating a key in the Trading 212 app. Turn on **Account data**, **Portfolio** and **History - Transactions**, and keep **Orders - Execute** and **Pies - Write** off. The other read-only permissions are optional; future versions of Compound can use them. You can skip this and do it later in **Settings**.
 
 Whoever finishes setup first owns the install, so do step 4 right after starting Compound, before anyone else on your network could open it.
 
@@ -95,10 +96,10 @@ Your data, key and settings are kept. Any database changes apply automatically w
 
 Back up two things, and keep them together:
 
-| What                                         | Holds                                                 | If you lose it                                                       |
-| -------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------- |
-| The `compound` database                      | Presets, activity log, your encrypted Trading 212 key | Re-add your key and presets                                          |
-| `secrets.json` in the `compound-data` volume | The encryption key and session secret                 | Your stored Trading 212 key can't be decrypted; remove and re-add it |
+| What                                         | Holds                                                                         | If you lose it                                                                                        |
+| -------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| The `compound` database                      | Presets, activity log, your encrypted Trading 212 key, daily portfolio values | Re-add your key and presets; deposit history reloads from Trading 212, but past daily values are gone |
+| `secrets.json` in the `compound-data` volume | The encryption key and session secret                                         | Your stored Trading 212 key can't be decrypted; remove and re-add it                                  |
 
 **The database:** with your own Postgres, your existing database backups already cover it. With the bundled one:
 
@@ -193,7 +194,7 @@ prisma/                      schema + migrations
 scripts/                     compound-reset-password (installed in the image)
 src/app/setup/               first-run setup screen
 src/app/login/               sign-in
-src/app/(app)/               dashboard, simulator, settings, connect Trading 212
+src/app/(app)/               dashboard, deposits, simulator, settings, connect Trading 212
 src/app/api/                 route handlers (rate-limited, scoped to the owner)
 src/middleware.ts            per-request Content-Security-Policy nonce
 src/lib/guard.ts             sign-in, same-origin and rate-limit checks for API routes
@@ -203,7 +204,8 @@ src/lib/password.ts          scrypt password hashing
 src/lib/session.ts           signed session cookie
 src/lib/crypto.ts            AES-256-GCM seal/open for the Trading 212 key
 src/lib/secrets.ts           generates and loads /data/secrets.json
-src/lib/t212/                Trading 212 client (server-only), parsing, caching
+src/lib/t212/                Trading 212 client (server-only), parsing, caching, transaction sync, daily value snapshots
+src/lib/deposits.ts          deposit totals, monthly figures, return and yearly rate
 src/lib/updates.ts           new-version check against GitHub Releases
 .github/workflows/           CI and tagged releases to GHCR
 ```

@@ -45,7 +45,7 @@ Keeping the encryption key in a different volume from the database means a leake
 
 | If someone obtains…                                          | They get                                                                                                                                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A database backup only                                       | Presets and activity history. Your key stays encrypted.                                                                                                 |
+| A database backup only                                       | Presets, activity history, and your deposit and withdrawal history (dates and amounts), and your portfolio's value each day. Your key stays encrypted.  |
 | `secrets.json` only                                          | Nothing useful on its own                                                                                                                               |
 | Both the database and `secrets.json`, or root on your server | Your decryptable key. With a **read-only** key they can see your portfolio but can't trade or withdraw. This is why Compound insists on read-only keys. |
 | Your Compound password                                       | The Compound interface, including removing or replacing your key. The key itself is never displayed.                                                    |
