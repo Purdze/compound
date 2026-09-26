@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 
 # ── Stage 1: install dependencies with Bun ────────────────────────────────────
-FROM oven/bun:1.3 AS deps
+FROM oven/bun:1.4 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY prisma ./prisma
 RUN bun install --frozen-lockfile
 
 # ── Stage 2: build the standalone Next.js output ──────────────────────────────
-FROM oven/bun:1.3 AS build
+FROM oven/bun:1.4 AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
