@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { type T212ErrorCode, asT212Error, loadUserCredentials, parseResponse, t212Get } from "./client";
+import { type T212ErrorCode, asT212Error, loadUserCredentials, t212Read } from "./client";
 import { normaliseTransactions, type CashTransaction, type TransactionPage } from "./normalise";
 
 export type SyncError = T212ErrorCode | "MISSING_PERMISSION";
@@ -59,10 +59,7 @@ async function syncTransactions(userId: string): Promise<void> {
   try {
     const creds = await loadUserCredentials(userId);
     if (!creds) return;
-    const fetchPage = async (path: string) => {
-      const raw = await t212Get<unknown>(creds, path, userId);
-      return parseResponse(() => normaliseTransactions(raw));
-    };
+    const fetchPage = (path: string) => t212Read(creds, path, userId, normaliseTransactions);
     const isKnown = async (references: string[]) =>
       (await db.cashTransaction.count({ where: { userId, apiKeyId: key.id, reference: { in: references } } })) > 0;
 

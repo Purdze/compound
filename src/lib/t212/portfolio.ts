@@ -9,6 +9,7 @@ import {
   t212Get,
 } from "./client";
 import { findVuag, normalisePositions, normaliseSummary, type Portfolio } from "./normalise";
+import { marketStatus } from "./markets";
 import { recordSnapshot } from "./snapshots";
 
 export type PortfolioResult =
@@ -16,7 +17,7 @@ export type PortfolioResult =
   | { status: "no-key" }
   | { status: "error"; code: T212ErrorCode; message: string };
 
-export type VuagPrice = { price: number; currency: string | null; asOf: string };
+export type VuagPrice = { price: number; currency: string | null; asOf: string; marketOpen: boolean | null };
 
 const TTL_MS = 60_000;
 
@@ -79,7 +80,11 @@ export async function getVuagPrice(userId: string): Promise<VuagPrice | null> {
   const result = await getPortfolio(userId);
   if (result.status !== "ok") return null;
   const vuag = findVuag(result.portfolio.positions);
-  return vuag
-    ? { price: vuag.currentPrice, currency: vuag.instrumentCurrency, asOf: result.portfolio.fetchedAt }
-    : null;
+  if (!vuag) return null;
+  return {
+    price: vuag.currentPrice,
+    currency: vuag.instrumentCurrency,
+    asOf: result.portfolio.fetchedAt,
+    marketOpen: marketStatus(userId, [vuag.ticker])?.[0]?.open ?? null,
+  };
 }

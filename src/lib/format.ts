@@ -44,6 +44,11 @@ export function time(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
+/** `Mon 08:00`, in the viewer's timezone. */
+export function dayTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export function dateTime(iso: string | Date): string {
   return new Date(iso).toLocaleString("en-GB", {
     day: "numeric",
