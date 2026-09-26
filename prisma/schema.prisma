@@ -88,6 +88,9 @@ model CalculatorPreset {
   goalAmount Int
   rate       Decimal  @db.Decimal(4, 1)
   lumpSum    Int
+  // Which number the simulator works out (see SimulatorMode); older presets are "monthly".
+  mode       String   @default("monthly")
+  monthly    Int      @default(500)
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

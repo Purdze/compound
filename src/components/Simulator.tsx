@@ -5,7 +5,16 @@ import { apiRequest } from "@/lib/client-api";
 import { NAME_MAX_LENGTH } from "@/lib/field-rules";
 import { compactGBP, wholeGBP } from "@/lib/format";
 import type { Preset } from "@/lib/presets";
-import { DEFAULT_INPUT, LIMITS, clampInput, simulate, type SimulatorInput } from "@/lib/simulator";
+import {
+  DEFAULT_INPUT,
+  LIMITS,
+  MODES,
+  MODE_LABELS,
+  clampInput,
+  simulate,
+  type SimulatorInput,
+  type SimulatorMode,
+} from "@/lib/simulator";
 import type { PortfolioResult } from "@/lib/t212/portfolio";
 import { SimulatorChart } from "./SimulatorChart";
 import { Slider } from "./Slider";
@@ -25,7 +34,12 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
   const [prefilling, setPrefilling] = useState(false);
 
   const result = useMemo(() => simulate(input), [input]);
-  const monthly = useAnimatedNumber(result.monthlyContribution);
+  const { mode } = input;
+  const headline = useAnimatedNumber(
+    mode === "monthly" ? result.monthlyContribution : mode === "value" ? result.finalValue : (result.reachAge ?? 0),
+  );
+  const contributed = wholeGBP(input.lumpSum + result.monthlyContribution * result.months);
+  const averageDeposit = averageMonthly !== null && averageMonthly > 0 ? averageMonthly : null;
 
   const update = (patch: Partial<SimulatorInput>) => setInput((prev) => clampInput({ ...prev, ...patch }));
   const set = (field: keyof SimulatorInput) => (v: number) => update({ [field]: v });
@@ -61,12 +75,13 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
     <div className="pt-12">
       <h1 className="text-2xl">Goal simulator</h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        How much would you need to invest each month to reach a goal by a given age? Move the sliders; everything
-        updates as you go.
+        Work out how much to invest each month, what you&apos;d end up with, or when you&apos;d reach a goal. Move the
+        sliders; everything updates as you go.
       </p>
 
       <div className="mt-10 grid gap-12 border-t border-rule pt-10 lg:grid-cols-[20rem_1fr]">
         <div className="space-y-7">
+          <ModeSwitch mode={mode} onChange={(m) => update({ mode: m })} />
           <Slider
             label="Current age"
             {...LIMITS.currentAge}
@@ -77,20 +92,44 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
           <Slider
             label="Target age"
             {...LIMITS.targetAge}
-            value={input.targetAge}
+            value={mode === "age" ? (result.reachAge ?? LIMITS.targetAge.max) : input.targetAge}
+            locked={mode === "age"}
             format={String}
             onChange={set("targetAge")}
             hint={
-              input.targetAge <= input.currentAge + 1 ? "Must be at least a year after your current age." : undefined
+              mode !== "age" && input.targetAge <= input.currentAge + 1
+                ? "Must be at least a year after your current age."
+                : undefined
             }
           />
           <Slider
-            label="Goal"
+            label={mode === "value" ? "Goal to compare against" : "Goal"}
             {...LIMITS.goalAmount}
             value={input.goalAmount}
             format={wholeGBP}
             onChange={set("goalAmount")}
           />
+          <div>
+            <Slider
+              label="Each month"
+              {...LIMITS.monthly}
+              value={mode === "monthly" ? Math.round(result.monthlyContribution) : input.monthly}
+              locked={mode === "monthly"}
+              format={wholeGBP}
+              onChange={set("monthly")}
+            />
+            {mode !== "monthly" && averageDeposit !== null && (
+              <Button
+                variant="quiet"
+                className="mt-2"
+                onClick={() =>
+                  update({ monthly: Math.round(averageDeposit / LIMITS.monthly.step) * LIMITS.monthly.step })
+                }
+              >
+                Use my average deposit ({wholeGBP(averageDeposit)} a month)
+              </Button>
+            )}
+          </div>
           <Slider
             label="Annual growth"
             {...LIMITS.rate}
@@ -119,41 +158,79 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
           <div className="flex flex-wrap gap-x-16 gap-y-6">
             <div>
               <p className="text-sm text-ink-muted">
-                {result.goalReachedByLumpSum ? "Monthly needed" : "Invest each month"}
+                {mode === "monthly" && (result.goalReachedByLumpSum ? "Monthly needed" : "Invest each month")}
+                {mode === "value" && `By ${input.targetAge} you'd have`}
+                {mode === "age" &&
+                  (result.reachAge === null
+                    ? `Reaching ${compactGBP(input.goalAmount)}`
+                    : `You'd reach ${compactGBP(input.goalAmount)} at`)}
               </p>
               <p
-                className={`figure mt-1 text-3xl ${result.goalReachedByLumpSum ? "text-accent" : ""}`}
+                className={`figure mt-1 text-3xl ${mode === "monthly" && result.goalReachedByLumpSum ? "text-accent" : ""}`}
                 aria-live="polite"
               >
-                {wholeGBP(Math.round(monthly))}
+                {mode === "age"
+                  ? result.reachAge === null
+                    ? `Not by ${LIMITS.targetAge.max}`
+                    : Math.round(headline)
+                  : wholeGBP(Math.round(headline))}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-ink-muted">Years to grow</p>
-              <p className="figure mt-1 text-3xl">{result.years}</p>
-            </div>
+            {(mode !== "age" || result.reachAge !== null) && (
+              <div>
+                <p className="text-sm text-ink-muted">Years to grow</p>
+                <p className="figure mt-1 text-3xl">{result.years}</p>
+              </div>
+            )}
           </div>
           <p className="mt-4 max-w-xl text-sm text-ink-muted">
-            {result.goalReachedByLumpSum ? (
-              <span className="text-accent">
-                Your lump sum alone is on track to reach {compactGBP(input.goalAmount)} by {input.targetAge}, growing to
-                about {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
-              </span>
-            ) : (
+            {mode === "monthly" &&
+              (result.goalReachedByLumpSum ? (
+                <span className="text-accent">
+                  Your lump sum alone is on track to reach {compactGBP(input.goalAmount)} by {input.targetAge}, growing
+                  to about {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
+                </span>
+              ) : (
+                <>
+                  {wholeGBP(result.monthlyContribution)} a month for {result.years} years, at {input.rate.toFixed(1)}% a
+                  year, reaches {wholeGBP(input.goalAmount)} by age {input.targetAge}. You&apos;d contribute{" "}
+                  {contributed} in total; growth covers the rest.
+                </>
+              ))}
+            {mode === "value" && (
               <>
-                {wholeGBP(result.monthlyContribution)} a month for {result.years} years, at {input.rate.toFixed(1)}% a
-                year, reaches {wholeGBP(input.goalAmount)} by age {input.targetAge}. You&apos;d contribute{" "}
-                {wholeGBP(input.lumpSum + result.monthlyContribution * result.months)} in total; growth covers the rest.
+                {result.finalValue >= input.goalAmount ? (
+                  <span className="text-accent">
+                    {wholeGBP(result.finalValue - input.goalAmount)} past your {compactGBP(input.goalAmount)} goal.
+                  </span>
+                ) : (
+                  <>
+                    {wholeGBP(input.goalAmount - result.finalValue)} short of your {compactGBP(input.goalAmount)} goal.
+                  </>
+                )}{" "}
+                You&apos;d contribute {contributed} in total; growth covers the rest.
               </>
             )}
+            {mode === "age" &&
+              (result.reachAge === null ? (
+                <>
+                  Not reached by {LIMITS.targetAge.max} at {wholeGBP(input.monthly)} a month. Invest more each month or
+                  add a lump sum.
+                </>
+              ) : (
+                <>
+                  {wholeGBP(input.monthly)} a month at {input.rate.toFixed(1)}% a year reaches{" "}
+                  {wholeGBP(input.goalAmount)} in {result.years} years. You&apos;d contribute {contributed} in total.
+                </>
+              ))}
           </p>
-          {averageMonthly !== null && averageMonthly > 0 && !result.goalReachedByLumpSum && (
+          {mode === "monthly" && averageDeposit !== null && !result.goalReachedByLumpSum && (
             <p className="mt-2 max-w-xl text-sm text-ink-muted">
-              Your deposits average {wholeGBP(averageMonthly)} a month
-              {averageMonthly >= result.monthlyContribution ? (
+              Your deposits average {wholeGBP(averageDeposit)} a month
+              {averageDeposit >= result.monthlyContribution ? (
                 <span className="text-accent">: enough for this goal.</span>
               ) : (
-                <>: {wholeGBP(result.monthlyContribution - averageMonthly)} a month short of this goal.</>
+                <>: {wholeGBP(result.monthlyContribution - averageDeposit)} a month short of this goal.</>
               )}
             </p>
           )}
@@ -190,6 +267,39 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
 
       <Presets input={input} presets={presets} setPresets={setPresets} onLoad={update} />
     </div>
+  );
+}
+
+/** What a preset is about, in its own mode's terms: "£1.5M by 55", "£500/month to 55" or "£1.5M at £500/month". */
+function presetSummary(p: Preset): string {
+  const monthly = `${compactGBP(p.monthly)}/month`;
+  if (p.mode === "value") return `${monthly} to ${p.targetAge}`;
+  if (p.mode === "age") return `${compactGBP(p.goalAmount)} at ${monthly}`;
+  return `${compactGBP(p.goalAmount)} by ${p.targetAge}`;
+}
+
+function ModeSwitch({ mode, onChange }: { mode: SimulatorMode; onChange: (mode: SimulatorMode) => void }) {
+  return (
+    <fieldset>
+      <legend className="text-sm text-ink-muted">Work out</legend>
+      <div className="mt-2 flex rounded-sm border border-rule">
+        {MODES.map((m) => (
+          <label key={m} className="flex-1 border-l border-rule first:border-l-0">
+            <input
+              type="radio"
+              name="simulator-mode"
+              value={m}
+              checked={mode === m}
+              onChange={() => onChange(m)}
+              className="peer sr-only"
+            />
+            <span className="block cursor-pointer px-2 py-2 text-center text-sm text-ink-muted peer-checked:bg-accent peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+              {MODE_LABELS[m]}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -272,8 +382,7 @@ function Presets({
               <div>
                 <span className="font-medium">{p.name}</span>
                 <span className="ml-3 text-sm text-ink-muted tabular-nums">
-                  {compactGBP(p.goalAmount)} by {p.targetAge} · from {p.currentAge} · {p.rate}% ·{" "}
-                  {compactGBP(p.lumpSum)} now
+                  {presetSummary(p)} · from {p.currentAge} · {p.rate}% · {compactGBP(p.lumpSum)} now
                 </span>
               </div>
               <div className="flex gap-4">

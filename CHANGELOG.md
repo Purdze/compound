@@ -4,6 +4,7 @@ What's changed in each version of Compound. To update, run `docker compose pull 
 
 ## Unreleased
 
+- The goal simulator can now work out any of three things: the monthly amount, what you'll end up with, or the age you'll reach your goal. Pick one under **Work out** and the other sliders become your inputs. Saved presets remember which.
 - **What's new** page, linked from the bottom of Settings, listing the changes in each version.
 - After an update, Compound shows a one-time note with a link to what's new.
 

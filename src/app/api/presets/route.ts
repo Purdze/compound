@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { nameSchema } from "@/lib/field-rules";
 import { presetSelect, toPreset } from "@/lib/presets";
 import { limiters } from "@/lib/rate-limit";
-import { LIMITS } from "@/lib/simulator";
+import { LIMITS, MODES } from "@/lib/simulator";
 
 const MAX_PRESETS = 50;
 
@@ -19,6 +19,8 @@ const body = z
     goalAmount: range(LIMITS.goalAmount).int(),
     rate: range(LIMITS.rate).multipleOf(LIMITS.rate.step),
     lumpSum: range(LIMITS.lumpSum).int(),
+    mode: z.enum(MODES),
+    monthly: range(LIMITS.monthly).int().multipleOf(LIMITS.monthly.step),
   })
   .refine((v) => v.targetAge > v.currentAge, { message: "Target age must be above current age." });
 
