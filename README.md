@@ -84,7 +84,7 @@ Your current version is shown at the bottom of **Settings**. When a new version 
 docker compose pull && docker compose up -d
 ```
 
-Your data, key and settings are kept. Any database changes apply automatically when the new version starts.
+Your data, key and settings are kept. Any database changes apply automatically when the new version starts. [CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
 
 - **Pin a version** if you'd rather update deliberately: change `:latest` in `docker-compose.yml` to a version like `:1.2`, which gets fixes only, or `:1.2.0`.
 - **Automatic updates:** if you already run [Watchtower](https://containrrr.dev/watchtower/), it will update Compound on its schedule like any other container.
