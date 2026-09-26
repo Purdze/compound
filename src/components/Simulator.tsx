@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/client-api";
 import { NAME_MAX_LENGTH } from "@/lib/field-rules";
 import { compactGBP, wholeGBP } from "@/lib/format";
@@ -11,9 +11,11 @@ import {
   MODES,
   MODE_LABELS,
   clampInput,
+  roundToStep,
   simulate,
   type SimulatorInput,
   type SimulatorMode,
+  type SimulatorResult,
 } from "@/lib/simulator";
 import type { PortfolioResult } from "@/lib/t212/portfolio";
 import { SimulatorChart } from "./SimulatorChart";
@@ -35,10 +37,8 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
 
   const result = useMemo(() => simulate(input), [input]);
   const { mode } = input;
-  const headline = useAnimatedNumber(
-    mode === "monthly" ? result.monthlyContribution : mode === "value" ? result.finalValue : (result.reachAge ?? 0),
-  );
-  const contributed = wholeGBP(input.lumpSum + result.monthlyContribution * result.months);
+  const view = describeResult(input, result);
+  const headline = useAnimatedNumber(view.value);
   const averageDeposit = averageMonthly !== null && averageMonthly > 0 ? averageMonthly : null;
 
   const update = (patch: Partial<SimulatorInput>) => setInput((prev) => clampInput({ ...prev, ...patch }));
@@ -56,7 +56,7 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
       return setNotice({ tone: "problem", text: "Connect a Trading 212 key in Settings first." });
 
     const total = res.data.portfolio.totalValue;
-    const rounded = Math.round(total / LIMITS.lumpSum.step) * LIMITS.lumpSum.step;
+    const rounded = roundToStep(total, LIMITS.lumpSum);
     update({ lumpSum: rounded });
     setNotice(
       rounded > LIMITS.lumpSum.max
@@ -122,21 +122,13 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
               <Button
                 variant="quiet"
                 className="mt-2"
-                onClick={() =>
-                  update({ monthly: Math.round(averageDeposit / LIMITS.monthly.step) * LIMITS.monthly.step })
-                }
+                onClick={() => update({ monthly: roundToStep(averageDeposit, LIMITS.monthly) })}
               >
                 Use my average deposit ({wholeGBP(averageDeposit)} a month)
               </Button>
             )}
           </div>
-          <Slider
-            label="Annual growth"
-            {...LIMITS.rate}
-            value={input.rate}
-            format={(v) => `${v.toFixed(1)}%`}
-            onChange={set("rate")}
-          />
+          <Slider label="Annual growth" {...LIMITS.rate} value={input.rate} format={percent} onChange={set("rate")} />
           <div>
             <Slider
               label="Lump sum now"
@@ -157,73 +149,19 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
         <div className="min-w-0">
           <div className="flex flex-wrap gap-x-16 gap-y-6">
             <div>
-              <p className="text-sm text-ink-muted">
-                {mode === "monthly" && (result.goalReachedByLumpSum ? "Monthly needed" : "Invest each month")}
-                {mode === "value" && `By ${input.targetAge} you'd have`}
-                {mode === "age" &&
-                  (result.reachAge === null
-                    ? `Reaching ${compactGBP(input.goalAmount)}`
-                    : `You'd reach ${compactGBP(input.goalAmount)} at`)}
-              </p>
-              <p
-                className={`figure mt-1 text-3xl ${mode === "monthly" && result.goalReachedByLumpSum ? "text-accent" : ""}`}
-                aria-live="polite"
-              >
-                {mode === "age"
-                  ? result.reachAge === null
-                    ? `Not by ${LIMITS.targetAge.max}`
-                    : Math.round(headline)
-                  : wholeGBP(Math.round(headline))}
+              <p className="text-sm text-ink-muted">{view.label}</p>
+              <p className={`figure mt-1 text-3xl ${view.accent ? "text-accent" : ""}`} aria-live="polite">
+                {view.figure(Math.round(headline))}
               </p>
             </div>
-            {(mode !== "age" || result.reachAge !== null) && (
+            {view.showYears && (
               <div>
                 <p className="text-sm text-ink-muted">Years to grow</p>
                 <p className="figure mt-1 text-3xl">{result.years}</p>
               </div>
             )}
           </div>
-          <p className="mt-4 max-w-xl text-sm text-ink-muted">
-            {mode === "monthly" &&
-              (result.goalReachedByLumpSum ? (
-                <span className="text-accent">
-                  Your lump sum alone is on track to reach {compactGBP(input.goalAmount)} by {input.targetAge}, growing
-                  to about {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
-                </span>
-              ) : (
-                <>
-                  {wholeGBP(result.monthlyContribution)} a month for {result.years} years, at {input.rate.toFixed(1)}% a
-                  year, reaches {wholeGBP(input.goalAmount)} by age {input.targetAge}. You&apos;d contribute{" "}
-                  {contributed} in total; growth covers the rest.
-                </>
-              ))}
-            {mode === "value" && (
-              <>
-                {result.finalValue >= input.goalAmount ? (
-                  <span className="text-accent">
-                    {wholeGBP(result.finalValue - input.goalAmount)} past your {compactGBP(input.goalAmount)} goal.
-                  </span>
-                ) : (
-                  <>
-                    {wholeGBP(input.goalAmount - result.finalValue)} short of your {compactGBP(input.goalAmount)} goal.
-                  </>
-                )}{" "}
-                You&apos;d contribute {contributed} in total; growth covers the rest.
-              </>
-            )}
-            {mode === "age" &&
-              (result.reachAge === null ? (
-                <>
-                  Not reached by {LIMITS.targetAge.max} at {wholeGBP(input.monthly)} a month. Invest more each month or
-                  add a lump sum.
-                </>
-              ) : (
-                <>
-                  {wholeGBP(input.monthly)} a month at {input.rate.toFixed(1)}% a year reaches{" "}
-                  {wholeGBP(input.goalAmount)} in {result.years} years. You&apos;d contribute {contributed} in total.
-                </>
-              ))}
-          </p>
+          <p className="mt-4 max-w-xl text-sm text-ink-muted">{view.sentence}</p>
           {mode === "monthly" && averageDeposit !== null && !result.goalReachedByLumpSum && (
             <p className="mt-2 max-w-xl text-sm text-ink-muted">
               Your deposits average {wholeGBP(averageDeposit)} a month
@@ -268,6 +206,111 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
       <Presets input={input} presets={presets} setPresets={setPresets} onLoad={update} />
     </div>
   );
+}
+
+const percent = (v: number) => `${v.toFixed(1)}%`;
+
+type ResultView = {
+  label: string;
+  /** The number the headline animates to, and how to show it. */
+  value: number;
+  figure: (value: number) => string;
+  accent: boolean;
+  showYears: boolean;
+  sentence: ReactNode;
+};
+
+/** The headline and explanation for whichever number the simulator is working out. */
+function describeResult(input: SimulatorInput, result: SimulatorResult): ResultView {
+  const goal = compactGBP(input.goalAmount);
+  const perMonth = `${wholeGBP(result.monthlyContribution)} a month`;
+  const contributed = (
+    <>
+      You&apos;d contribute {wholeGBP(input.lumpSum + result.monthlyContribution * result.months)} in total; growth
+      covers the rest.
+    </>
+  );
+
+  if (input.mode === "value") {
+    const difference = result.finalValue - input.goalAmount;
+    return {
+      label: `By ${input.targetAge} you'd have`,
+      value: result.finalValue,
+      figure: wholeGBP,
+      accent: false,
+      showYears: true,
+      sentence: (
+        <>
+          {difference >= 0 ? (
+            <span className="text-accent">
+              {wholeGBP(difference)} past your {goal} goal.
+            </span>
+          ) : (
+            <>
+              {wholeGBP(-difference)} short of your {goal} goal.
+            </>
+          )}{" "}
+          {contributed}
+        </>
+      ),
+    };
+  }
+
+  if (input.mode === "age") {
+    if (result.reachAge === null) {
+      const last = LIMITS.targetAge.max;
+      return {
+        label: `Reaching ${goal}`,
+        value: 0,
+        figure: () => `Not by ${last}`,
+        accent: false,
+        showYears: false,
+        sentence: `Not reached by ${last} at ${perMonth}. Invest more each month or add a lump sum.`,
+      };
+    }
+    return {
+      label: `You'd reach ${goal} at`,
+      value: result.reachAge,
+      figure: String,
+      accent: false,
+      showYears: true,
+      sentence: (
+        <>
+          {perMonth} at {percent(input.rate)} a year reaches {wholeGBP(input.goalAmount)} in {result.years} years.{" "}
+          {contributed}
+        </>
+      ),
+    };
+  }
+
+  if (result.goalReachedByLumpSum) {
+    return {
+      label: "Monthly needed",
+      value: 0,
+      figure: wholeGBP,
+      accent: true,
+      showYears: true,
+      sentence: (
+        <span className="text-accent">
+          Your lump sum alone is on track to reach {goal} by {input.targetAge}, growing to about{" "}
+          {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
+        </span>
+      ),
+    };
+  }
+  return {
+    label: "Invest each month",
+    value: result.monthlyContribution,
+    figure: wholeGBP,
+    accent: false,
+    showYears: true,
+    sentence: (
+      <>
+        {perMonth} for {result.years} years, at {percent(input.rate)} a year, reaches {wholeGBP(input.goalAmount)} by
+        age {input.targetAge}. {contributed}
+      </>
+    ),
+  };
 }
 
 /** What a preset is about, in its own mode's terms: "£1.5M by 55", "£500/month to 55" or "£1.5M at £500/month". */

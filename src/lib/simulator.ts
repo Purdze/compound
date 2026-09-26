@@ -20,7 +20,7 @@ export type SimulatorInput = {
 
 export type YearPoint = { age: number; value: number; contributed: number };
 
-type SimulatorResult = {
+export type SimulatorResult = {
   years: number;
   months: number;
   monthlyContribution: number;
@@ -118,6 +118,8 @@ export function simulate(input: SimulatorInput): SimulatorResult {
     series,
   };
 }
+
+export const roundToStep = (value: number, { step }: { step: number }) => Math.round(value / step) * step;
 
 export function clampInput(input: SimulatorInput): SimulatorInput {
   const clamp = (v: number, { min, max }: { min: number; max: number }) => Math.min(max, Math.max(min, v));

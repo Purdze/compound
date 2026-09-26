@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_INPUT, clampInput, simulate } from "../src/lib/simulator";
+import { DEFAULT_INPUT, LIMITS, clampInput, roundToStep, simulate } from "../src/lib/simulator";
 
 describe("simulate", () => {
   test("defaults: £1.5M in 25 years at 10% needs about £1,130/month", () => {
@@ -108,4 +108,10 @@ describe("target age mode", () => {
     expect(r.reachAge).toBe(30);
     expect(r.goalReachedByLumpSum).toBe(true);
   });
+});
+
+test("roundToStep lands on the nearest slider step", () => {
+  expect(roundToStep(15, LIMITS.monthly)).toBe(25);
+  expect(roundToStep(449, LIMITS.monthly)).toBe(450);
+  expect(roundToStep(15_030, LIMITS.lumpSum)).toBe(15_000);
 });
