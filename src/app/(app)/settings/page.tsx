@@ -10,6 +10,7 @@ import { ExternalLink, HeadRow, Row, Section, Table, Td, Th } from "@/components
 import { apiKeyStatus } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ERASED_DATA } from "@/lib/erase";
 import { env } from "@/lib/env";
 import { failureForStatus } from "@/lib/t212/client";
 import { releaseNotesUrl } from "@/lib/updates";
@@ -106,7 +107,7 @@ export default async function SettingsPage() {
 
         <Section
           title="Erase all data"
-          description="Removes your stored API key, presets, activity log, deposit history and daily values from this Compound install. This can't be undone."
+          description={`Removes your stored ${ERASED_DATA} from this Compound install. This can't be undone.`}
         >
           <EraseData />
         </Section>

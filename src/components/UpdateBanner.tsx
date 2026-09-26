@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { UpdateInfo } from "@/lib/updates";
-import { versionTag } from "@/lib/version";
-import { Button, ExternalLink } from "./ui";
-import { UpdateCommand } from "./UpdateCommand";
+import { Button } from "./ui";
+import { UpdateDetails } from "./UpdateDetails";
 
 const DISMISSED_KEY = "compound:dismissed-update";
 
@@ -30,18 +29,11 @@ export function UpdateBanner({ update }: { update: UpdateInfo }) {
 
   return (
     <div className="border-b border-rule py-3 text-sm" role="status">
-      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-        <span>
-          Compound {versionTag(update.version)} is available. You&apos;re on {versionTag(update.current)}.
-        </span>
-        <ExternalLink href={update.url}>What&apos;s new</ExternalLink>
+      <UpdateDetails update={update}>
         <Button variant="quiet" onClick={dismiss}>
           Dismiss
         </Button>
-      </div>
-      <div className="mt-2">
-        <UpdateCommand />
-      </div>
+      </UpdateDetails>
     </div>
   );
 }

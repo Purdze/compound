@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiRequest } from "@/lib/client-api";
+import { ERASED_DATA } from "@/lib/erase";
 import { Button, Field, Notice, inputClass, type NoticeMessage } from "../ui";
 
 const CONFIRM = "erase";
@@ -25,10 +26,7 @@ export function EraseData() {
     setPending(false);
     if (!res.ok) return setMessage({ tone: "problem", text: res.error });
     setTyped("");
-    setMessage({
-      tone: "success",
-      text: "Erased. Your key, presets, activity log, deposit history and daily values are gone.",
-    });
+    setMessage({ tone: "success", text: `Erased. Your ${ERASED_DATA} are gone.` });
     router.refresh();
   }
 
