@@ -42,7 +42,7 @@ You need Docker with Compose 2.24 or newer. Any Linux homelab, NAS, or a Raspber
    ```
    If it doesn't come up, `docker compose logs app` says what's missing.
 4. Open `http://<your-server>:3000` straight away and choose your name and a password.
-5. Connect Trading 212. The next screen walks you through creating a key in the Trading 212 app. Turn on **Account data**, **Portfolio** and **History - Transactions**, and keep **Orders - Execute** and **Pies - Write** off. The other read-only permissions are optional; future versions of Compound can use them. You can skip this and do it later in **Settings**.
+5. Connect Trading 212. The next screen walks you through creating a key in the Trading 212 app. Turn on **Account data**, **Portfolio** and **History - Transactions**, and keep **Orders - Execute** and **Pies - Write** off. The other read-only permissions are optional: **Metadata** lets Compound show when markets are closed, and future versions may use the rest. You can skip this and do it later in **Settings**.
 
 Whoever finishes setup first owns the install, so do step 4 right after starting Compound, before anyone else on your network could open it.
 

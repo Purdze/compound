@@ -25,7 +25,8 @@ export class TtlCache<T> {
     return this.live(key)?.expiresAt;
   }
 
-  async get(key: string, load: () => Promise<T>): Promise<T> {
+  /** `ttlFor` overrides the cache's lifetime for a particular loaded value. */
+  async get(key: string, load: () => Promise<T>, ttlFor?: (value: T) => number | undefined): Promise<T> {
     const hit = this.peek(key);
     if (hit !== undefined) return hit;
 
@@ -34,7 +35,7 @@ export class TtlCache<T> {
 
     const promise = load()
       .then((value) => {
-        this.entries.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+        this.entries.set(key, { value, expiresAt: Date.now() + (ttlFor?.(value) ?? this.ttlMs) });
         return value;
       })
       .finally(() => this.inflight.delete(key));

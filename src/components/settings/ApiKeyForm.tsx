@@ -21,12 +21,12 @@ const PERMISSION_GROUPS = [
   },
   {
     title: "Optional",
-    note: "Read-only and safe to turn on. Compound doesn't show this data yet, but future versions will use it if it's available.",
+    note: "Read-only and safe to turn on. Compound uses them where noted, and future versions may use the rest.",
     items: [
       ["History", "Exports your account history as CSV reports."],
       ["History - Dividends", "Dividends you've been paid."],
       ["History - Orders", "Orders you've placed in the past."],
-      ["Metadata", "The instruments and exchanges Trading 212 offers."],
+      ["Metadata", "Exchange opening hours, so Compound can show when markets are closed."],
       ["Orders - Read", "Orders waiting to be filled."],
       ["Pies - Read", "Your pies and their settings."],
     ],

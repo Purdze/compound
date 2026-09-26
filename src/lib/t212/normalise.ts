@@ -119,6 +119,45 @@ export function normaliseTransactions(raw: unknown): TransactionPage {
   return { items, nextPath: next?.startsWith("/equity/history/transactions?") ? next : null };
 }
 
+export type ScheduleEvent = { at: string; type: string };
+export type Schedule = { exchange: string; events: ScheduleEvent[] };
+
+/** `/equity/metadata/instruments` → ticker to working schedule id. */
+export function normaliseInstrumentSchedules(raw: unknown): Map<string, number> {
+  if (!Array.isArray(raw)) throw new Error("instruments: expected an array");
+  const out = new Map<string, number>();
+  for (const item of raw) {
+    if (!isObj(item)) continue;
+    const ticker = str(item.ticker);
+    const scheduleId = num(item.workingScheduleId);
+    if (ticker && scheduleId !== undefined) out.set(ticker, scheduleId);
+  }
+  return out;
+}
+
+/** `/equity/metadata/exchanges` → working schedule id to its exchange and time events, in time order. */
+export function normaliseExchanges(raw: unknown): Map<number, Schedule> {
+  if (!Array.isArray(raw)) throw new Error("exchanges: expected an array");
+  const out = new Map<number, Schedule>();
+  for (const exchange of raw) {
+    if (!isObj(exchange) || !Array.isArray(exchange.workingSchedules)) continue;
+    const name = str(exchange.name);
+    if (!name) continue;
+    for (const schedule of exchange.workingSchedules) {
+      if (!isObj(schedule) || !Array.isArray(schedule.timeEvents)) continue;
+      const id = num(schedule.id);
+      if (id === undefined) continue;
+      const events = schedule.timeEvents
+        .filter(isObj)
+        .map((e) => ({ at: str(e.date), type: str(e.type) }))
+        .filter((e): e is ScheduleEvent => !!e.at && !!e.type && !Number.isNaN(Date.parse(e.at)))
+        .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      out.set(id, { exchange: name, events });
+    }
+  }
+  return out;
+}
+
 /** VUAG trades on the LSE as e.g. `VUAGl_EQ`. */
 export function findVuag(positions: Position[]): Position | undefined {
   return positions.find((p) => /^VUAG[a-z]?_EQ$/i.test(p.ticker));
