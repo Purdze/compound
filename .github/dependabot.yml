@@ -4,8 +4,28 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Major versions of these need code changes, so they're upgraded deliberately
+    # rather than proposed each week.
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+    # Groups are matched in order. Packages that must stay on the same version share a PR;
+    # everything else routine arrives in one PR a week. Security fixes still arrive on their own.
     groups:
-      # One PR a week for routine updates; security fixes still arrive on their own.
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      next:
+        patterns: ["next", "eslint-config-next"]
       dependencies:
         update-types: [minor, patch]
 
