@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ApiKeyForm } from "@/components/settings/ApiKeyForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { EraseData } from "@/components/settings/EraseData";
@@ -6,14 +7,13 @@ import { SignOutEverywhere } from "@/components/settings/SignOutEverywhere";
 import { UpdateCheck } from "@/components/settings/UpdateCheck";
 import { LocalTime } from "@/components/LocalTime";
 import { SignOutButton } from "@/components/SignOutButton";
-import { ExternalLink, HeadRow, Row, Section, Table, Td, Th } from "@/components/ui";
+import { HeadRow, Row, Section, Table, Td, Th, WHATS_NEW, linkClass } from "@/components/ui";
 import { apiKeyStatus } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ERASED_DATA } from "@/lib/erase";
 import { env } from "@/lib/env";
 import { failureForStatus } from "@/lib/t212/client";
-import { releaseNotesUrl } from "@/lib/updates";
 import { DEV_VERSION, versionTag } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
@@ -117,7 +117,10 @@ export default async function SettingsPage() {
           "Compound development build"
         ) : (
           <>
-            Compound {versionTag(version)} · <ExternalLink href={releaseNotesUrl(version)}>Release notes</ExternalLink>{" "}
+            Compound {versionTag(version)} ·{" "}
+            <Link href={WHATS_NEW} className={linkClass}>
+              What&apos;s new
+            </Link>{" "}
             · <UpdateCheck />
           </>
         )}

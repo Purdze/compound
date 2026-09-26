@@ -7,6 +7,7 @@ node_modules
 .idea
 tests
 *.md
+!CHANGELOG.md
 docker-compose*.yml
 
 # Secrets: never bake into an image

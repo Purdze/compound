@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "*": ["node_modules/@img/**", "node_modules/sharp/**", "node_modules/typescript/**"],
   },
+  // Read at runtime by the What's new page (src/lib/whats-new.ts).
+  outputFileTracingIncludes: { "*": ["./CHANGELOG.md"] },
   images: { unoptimized: true },
   poweredByHeader: false,
   // The Content-Security-Policy is set per request in src/middleware.ts (it needs a nonce).

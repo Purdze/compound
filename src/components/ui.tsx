@@ -3,6 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variant = "primary" | "secondary" | "danger" | "quiet";
 
 export const API_KEY_SETTINGS = "/settings#api-key";
+export const WHATS_NEW = "/whats-new";
 export const T212_APP_URL = "https://app.trading212.com/";
 
 export const linkClass =

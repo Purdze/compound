@@ -4,6 +4,9 @@ What's changed in each version of Compound. To update, run `docker compose pull 
 
 ## Unreleased
 
+- **What's new** page, linked from the bottom of Settings, listing the changes in each version.
+- After an update, Compound shows a one-time note with a link to what's new.
+
 ## 0.2.1 (2026-09-26)
 
 - **Check for updates** in Settings, next to the version. It asks GitHub straight away instead of waiting for the twice-daily check.
