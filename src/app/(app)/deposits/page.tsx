@@ -18,19 +18,22 @@ import {
   linkClass,
   lossClass,
 } from "@/components/ui";
+import { apiKeyStatus } from "@/lib/api-key-status";
 import { requireOwner } from "@/lib/auth";
 import {
   annualisedReturn,
+  isaAllowance,
   realReturn,
   summariseDeposits,
   transactionLabel,
   valueHistory,
   type Snapshot,
 } from "@/lib/deposits";
-import { dayLabel, money, monthLabel, signedMoney, signedPercent } from "@/lib/format";
+import { dayLabel, money, monthLabel, signedMoney, signedPercent, wholeGBP } from "@/lib/format";
 import { T212Error } from "@/lib/t212/client";
 import type { CashTransaction } from "@/lib/t212/normalise";
 import { getPortfolio } from "@/lib/t212/portfolio";
+import { ISA_ALLOWANCE } from "@/lib/simulator";
 import { readSnapshots } from "@/lib/t212/snapshots";
 import { depositHistory, type SyncError } from "@/lib/t212/transactions";
 
@@ -40,7 +43,11 @@ const LIST_LIMIT = 100;
 
 export default async function DepositsPage() {
   const { id: userId } = await requireOwner();
-  const [history, portfolio] = await Promise.all([depositHistory(userId), getPortfolio(userId)]);
+  const [history, portfolio, key] = await Promise.all([
+    depositHistory(userId),
+    getPortfolio(userId),
+    apiKeyStatus(userId),
+  ]);
   // After the portfolio fetch, which records today's value.
   const snapshots = await readSnapshots(userId);
 
@@ -76,6 +83,7 @@ export default async function DepositsPage() {
         <DepositsView
           transactions={history.transactions}
           snapshots={snapshots}
+          isIsa={key.connected && key.isIsa}
           totalValue={portfolio.status === "ok" ? portfolio.portfolio.totalValue : null}
           currency={
             portfolio.status === "ok"
@@ -111,6 +119,29 @@ function SyncProblem({ code }: { code: SyncError }) {
   );
 }
 
+function IsaLine({ transactions, isIsa }: { transactions: CashTransaction[]; isIsa: boolean }) {
+  if (!isIsa) {
+    return (
+      <p className="mt-6 text-sm text-ink-muted">
+        Is this a Stocks &amp; Shares ISA?{" "}
+        <Link href={API_KEY_SETTINGS} className={linkClass}>
+          Mark it in Settings
+        </Link>{" "}
+        to track your allowance.
+      </p>
+    );
+  }
+  const a = isaAllowance(transactions);
+  return (
+    <p className={`mt-6 text-sm ${a.remaining === 0 ? "text-accent-rust" : "text-ink-muted"}`}>
+      This tax year (since {dayLabel(a.startDay)}): {wholeGBP(a.used)} of your {wholeGBP(ISA_ALLOWANCE)} ISA allowance
+      used · {wholeGBP(a.remaining)} left.
+      {a.transfersIn > 0 &&
+        ` Plus ${wholeGBP(a.transfersIn)} transferred in, which counts too unless it came from another ISA.`}
+    </p>
+  );
+}
+
 function returnNote(overall: number | null, yearly: number | null): string | undefined {
   if (overall === null) return undefined;
   const perYear = yearly === null ? "yearly figure after your first year" : `${signedPercent(yearly)} a year`;
@@ -120,11 +151,13 @@ function returnNote(overall: number | null, yearly: number | null): string | und
 function DepositsView({
   transactions,
   snapshots,
+  isIsa,
   totalValue,
   currency,
 }: {
   transactions: CashTransaction[];
   snapshots: Snapshot[];
+  isIsa: boolean;
   totalValue: number | null;
   currency: string;
 }) {
@@ -169,7 +202,8 @@ function DepositsView({
             </>
           )}
         </dl>
-        {s.fees > 0 && <p className="mt-6 text-sm text-ink-muted">Fees charged: {money(s.fees, currency)}</p>}
+        <IsaLine transactions={transactions} isIsa={isIsa} />
+        {s.fees > 0 && <p className="mt-2 text-sm text-ink-muted">Fees charged: {money(s.fees, currency)}</p>}
         {s.otherCurrencies > 0 && (
           <p className="mt-2 text-sm text-ink-muted">
             {s.otherCurrencies} transaction{s.otherCurrencies === 1 ? " isn't" : "s aren't"} in {currency} and{" "}

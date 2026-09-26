@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { annualisedReturn, realReturn, summariseDeposits, transactionLabel, valueHistory } from "../src/lib/deposits";
+import {
+  annualisedReturn,
+  isaAllowance,
+  realReturn,
+  summariseDeposits,
+  taxYearStart,
+  transactionLabel,
+  valueHistory,
+} from "../src/lib/deposits";
 import type { CashTransaction } from "../src/lib/t212/normalise";
 
 const tx = (type: string, amount: number, occurredAt: string, currency = "GBP"): CashTransaction => ({
@@ -126,4 +134,33 @@ test("valueHistory pairs each day's value with what had been put in by then", ()
     { day: "2026-09-02", value: 105, contributed: 100 },
     { day: "2026-09-04", value: 160, contributed: 150 },
   ]);
+});
+
+describe("tax year and ISA allowance", () => {
+  test("the tax year starts at midnight UK time on 6 April", () => {
+    expect(taxYearStart(new Date("2026-04-05T22:59:59Z")).toISOString()).toBe("2025-04-05T23:00:00.000Z");
+    expect(taxYearStart(new Date("2026-04-05T23:00:00Z")).toISOString()).toBe("2026-04-05T23:00:00.000Z");
+    expect(taxYearStart(new Date("2027-01-15T12:00:00Z")).toISOString()).toBe("2026-04-05T23:00:00.000Z");
+  });
+
+  test("counts deposits minus withdrawals this tax year, never below zero", () => {
+    const now = new Date("2026-09-26T12:00:00Z");
+    const a = isaAllowance(
+      [
+        tx("DEPOSIT", 5_000, "2026-03-01T10:00:00Z"),
+        tx("DEPOSIT", 3_000, "2026-05-01T10:00:00Z"),
+        tx("WITHDRAW", -500, "2026-06-01T10:00:00Z"),
+        tx("TRANSFER", 1_000, "2026-07-01T10:00:00Z"),
+        tx("DEPOSIT", 999, "2026-07-01T10:00:00Z", "EUR"),
+      ],
+      now,
+    );
+    expect(a).toEqual({ startDay: "2026-04-06", used: 2_500, remaining: 17_500, transfersIn: 1_000 });
+    expect(isaAllowance([tx("WITHDRAW", -500, "2026-06-01T10:00:00Z")], now).used).toBe(0);
+  });
+
+  test("nothing left once the allowance is used", () => {
+    const a = isaAllowance([tx("DEPOSIT", 21_000, "2026-05-01T10:00:00Z")], new Date("2026-09-26T12:00:00Z"));
+    expect(a).toMatchObject({ used: 21_000, remaining: 0 });
+  });
 });

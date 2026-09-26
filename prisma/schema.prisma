@@ -41,6 +41,8 @@ model ApiKey {
   transactionsSyncedAt DateTime?
   // The T212ErrorCode (or MISSING_PERMISSION) from the last failed sync.
   transactionsError    String?
+  // Set by the owner in Settings; Trading 212's API doesn't say whether an account is an ISA.
+  isIsa                Boolean   @default(false)
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   cashTransactions CashTransaction[]
@@ -91,6 +93,7 @@ model CalculatorPreset {
   // Which number the simulator works out (see SimulatorMode); older presets are "monthly".
   mode       String   @default("monthly")
   monthly    Int      @default(500)
+  account    String   @default("general")
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

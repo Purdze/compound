@@ -19,5 +19,12 @@ export default async function SimulatorPage() {
   const averageMonthly =
     history.status === "ready" ? summariseDeposits(history.transactions, "GBP").averageMonthly : null;
 
-  return <Simulator connected={key.connected} initialPresets={presets.map(toPreset)} averageMonthly={averageMonthly} />;
+  return (
+    <Simulator
+      connected={key.connected}
+      defaultAccount={key.connected && key.isIsa ? "isa" : "general"}
+      initialPresets={presets.map(toPreset)}
+      averageMonthly={averageMonthly}
+    />
+  );
 }

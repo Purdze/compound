@@ -126,6 +126,7 @@ export async function storeUserCredentials(userId: string, creds: T212Credential
       lastUsedAt: null,
       transactionsSyncedAt: null,
       transactionsError: null,
+      isIsa: false,
       cashTransactions: { deleteMany: {} },
       valueSnapshots: { deleteMany: {} },
     },

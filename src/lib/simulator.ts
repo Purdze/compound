@@ -8,8 +8,24 @@ export const MODE_LABELS: Record<SimulatorMode, string> = {
   age: "Target age",
 };
 
+export const ACCOUNTS = ["general", "isa"] as const;
+export type Account = (typeof ACCOUNTS)[number];
+
+export const ACCOUNT_LABELS: Record<Account, string> = {
+  general: "General account",
+  isa: "ISA",
+};
+
+// UK Stocks & Shares ISA: new money per tax year. Update if the government changes it.
+export const ISA_ALLOWANCE = 20_000;
+export const ISA_MONTHLY = ISA_ALLOWANCE / 12;
+
+/** How much of a monthly amount doesn't fit in the ISA allowance. */
+export const isaOverflow = (monthly: number) => Math.max(0, monthly - ISA_MONTHLY);
+
 export type SimulatorInput = {
   mode: SimulatorMode;
+  account: Account;
   currentAge: number;
   targetAge: number;
   goalAmount: number;
@@ -44,6 +60,7 @@ export const LIMITS = {
 
 export const DEFAULT_INPUT: SimulatorInput = {
   mode: "monthly",
+  account: "general",
   currentAge: LIMITS.currentAge.default,
   targetAge: LIMITS.targetAge.default,
   goalAmount: LIMITS.goalAmount.default,
@@ -126,6 +143,7 @@ export function clampInput(input: SimulatorInput): SimulatorInput {
   const currentAge = clamp(input.currentAge, LIMITS.currentAge);
   return {
     mode: input.mode,
+    account: input.account,
     currentAge,
     targetAge: clamp(Math.max(input.targetAge, currentAge + 1), LIMITS.targetAge),
     goalAmount: clamp(input.goalAmount, LIMITS.goalAmount),

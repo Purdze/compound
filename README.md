@@ -3,7 +3,7 @@
 A calm, self-hosted viewer for your Trading 212 portfolio, with a long-term goal simulator. You run your own copy on your own machine, so your Trading 212 key is stored only there and only ever sent to Trading 212.
 
 - **Dashboard:** your portfolio's total value, cash, invested amount and gain, plus every position. Updates every minute, or on demand.
-- **Deposits:** how much you've put in and taken out, what it's grown to (overall and as a yearly rate), a chart of its value against what you've put in, and a month-by-month chart. Needs the History - Transactions permission.
+- **Deposits:** how much you've put in and taken out, how much of this year's ISA allowance you've used, what it's grown to (overall and as a yearly rate), a chart of its value against what you've put in, and a month-by-month chart. Needs the History - Transactions permission.
 - **Goal simulator:** how much to invest each month to reach a goal by a given age, with a chart you can adjust live and presets you can save. Compares the goal against what you actually deposit each month. Works without connecting Trading 212.
 - **VUAG price** in the header, if you hold Vanguard's S&P 500 fund.
 - **Key activity:** every call Compound makes to Trading 212 with your key, listed in Settings.
