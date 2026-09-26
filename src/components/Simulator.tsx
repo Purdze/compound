@@ -1,11 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/client-api";
 import { NAME_MAX_LENGTH } from "@/lib/field-rules";
 import { compactGBP, wholeGBP } from "@/lib/format";
 import type { Preset } from "@/lib/presets";
-import { DEFAULT_INPUT, LIMITS, clampInput, simulate, type SimulatorInput } from "@/lib/simulator";
+import {
+  DEFAULT_INPUT,
+  LIMITS,
+  MODES,
+  MODE_LABELS,
+  clampInput,
+  roundToStep,
+  simulate,
+  type SimulatorInput,
+  type SimulatorMode,
+  type SimulatorResult,
+} from "@/lib/simulator";
 import type { PortfolioResult } from "@/lib/t212/portfolio";
 import { SimulatorChart } from "./SimulatorChart";
 import { Slider } from "./Slider";
@@ -25,7 +36,10 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
   const [prefilling, setPrefilling] = useState(false);
 
   const result = useMemo(() => simulate(input), [input]);
-  const monthly = useAnimatedNumber(result.monthlyContribution);
+  const { mode } = input;
+  const view = describeResult(input, result);
+  const headline = useAnimatedNumber(view.value);
+  const averageDeposit = averageMonthly !== null && averageMonthly > 0 ? averageMonthly : null;
 
   const update = (patch: Partial<SimulatorInput>) => setInput((prev) => clampInput({ ...prev, ...patch }));
   const set = (field: keyof SimulatorInput) => (v: number) => update({ [field]: v });
@@ -42,7 +56,7 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
       return setNotice({ tone: "problem", text: "Connect a Trading 212 key in Settings first." });
 
     const total = res.data.portfolio.totalValue;
-    const rounded = Math.round(total / LIMITS.lumpSum.step) * LIMITS.lumpSum.step;
+    const rounded = roundToStep(total, LIMITS.lumpSum);
     update({ lumpSum: rounded });
     setNotice(
       rounded > LIMITS.lumpSum.max
@@ -61,12 +75,13 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
     <div className="pt-12">
       <h1 className="text-2xl">Goal simulator</h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        How much would you need to invest each month to reach a goal by a given age? Move the sliders; everything
-        updates as you go.
+        Work out how much to invest each month, what you&apos;d end up with, or when you&apos;d reach a goal. Move the
+        sliders; everything updates as you go.
       </p>
 
       <div className="mt-10 grid gap-12 border-t border-rule pt-10 lg:grid-cols-[20rem_1fr]">
         <div className="space-y-7">
+          <ModeSwitch mode={mode} onChange={(m) => update({ mode: m })} />
           <Slider
             label="Current age"
             {...LIMITS.currentAge}
@@ -77,27 +92,43 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
           <Slider
             label="Target age"
             {...LIMITS.targetAge}
-            value={input.targetAge}
+            value={mode === "age" ? (result.reachAge ?? LIMITS.targetAge.max) : input.targetAge}
+            locked={mode === "age"}
             format={String}
             onChange={set("targetAge")}
             hint={
-              input.targetAge <= input.currentAge + 1 ? "Must be at least a year after your current age." : undefined
+              mode !== "age" && input.targetAge <= input.currentAge + 1
+                ? "Must be at least a year after your current age."
+                : undefined
             }
           />
           <Slider
-            label="Goal"
+            label={mode === "value" ? "Goal to compare against" : "Goal"}
             {...LIMITS.goalAmount}
             value={input.goalAmount}
             format={wholeGBP}
             onChange={set("goalAmount")}
           />
-          <Slider
-            label="Annual growth"
-            {...LIMITS.rate}
-            value={input.rate}
-            format={(v) => `${v.toFixed(1)}%`}
-            onChange={set("rate")}
-          />
+          <div>
+            <Slider
+              label="Each month"
+              {...LIMITS.monthly}
+              value={mode === "monthly" ? Math.round(result.monthlyContribution) : input.monthly}
+              locked={mode === "monthly"}
+              format={wholeGBP}
+              onChange={set("monthly")}
+            />
+            {mode !== "monthly" && averageDeposit !== null && (
+              <Button
+                variant="quiet"
+                className="mt-2"
+                onClick={() => update({ monthly: roundToStep(averageDeposit, LIMITS.monthly) })}
+              >
+                Use my average deposit ({wholeGBP(averageDeposit)} a month)
+              </Button>
+            )}
+          </div>
+          <Slider label="Annual growth" {...LIMITS.rate} value={input.rate} format={percent} onChange={set("rate")} />
           <div>
             <Slider
               label="Lump sum now"
@@ -118,42 +149,26 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
         <div className="min-w-0">
           <div className="flex flex-wrap gap-x-16 gap-y-6">
             <div>
-              <p className="text-sm text-ink-muted">
-                {result.goalReachedByLumpSum ? "Monthly needed" : "Invest each month"}
-              </p>
-              <p
-                className={`figure mt-1 text-3xl ${result.goalReachedByLumpSum ? "text-accent" : ""}`}
-                aria-live="polite"
-              >
-                {wholeGBP(Math.round(monthly))}
+              <p className="text-sm text-ink-muted">{view.label}</p>
+              <p className={`figure mt-1 text-3xl ${view.accent ? "text-accent" : ""}`} aria-live="polite">
+                {view.figure(Math.round(headline))}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-ink-muted">Years to grow</p>
-              <p className="figure mt-1 text-3xl">{result.years}</p>
-            </div>
-          </div>
-          <p className="mt-4 max-w-xl text-sm text-ink-muted">
-            {result.goalReachedByLumpSum ? (
-              <span className="text-accent">
-                Your lump sum alone is on track to reach {compactGBP(input.goalAmount)} by {input.targetAge}, growing to
-                about {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
-              </span>
-            ) : (
-              <>
-                {wholeGBP(result.monthlyContribution)} a month for {result.years} years, at {input.rate.toFixed(1)}% a
-                year, reaches {wholeGBP(input.goalAmount)} by age {input.targetAge}. You&apos;d contribute{" "}
-                {wholeGBP(input.lumpSum + result.monthlyContribution * result.months)} in total; growth covers the rest.
-              </>
+            {view.showYears && (
+              <div>
+                <p className="text-sm text-ink-muted">Years to grow</p>
+                <p className="figure mt-1 text-3xl">{result.years}</p>
+              </div>
             )}
-          </p>
-          {averageMonthly !== null && averageMonthly > 0 && !result.goalReachedByLumpSum && (
+          </div>
+          <p className="mt-4 max-w-xl text-sm text-ink-muted">{view.sentence}</p>
+          {mode === "monthly" && averageDeposit !== null && !result.goalReachedByLumpSum && (
             <p className="mt-2 max-w-xl text-sm text-ink-muted">
-              Your deposits average {wholeGBP(averageMonthly)} a month
-              {averageMonthly >= result.monthlyContribution ? (
+              Your deposits average {wholeGBP(averageDeposit)} a month
+              {averageDeposit >= result.monthlyContribution ? (
                 <span className="text-accent">: enough for this goal.</span>
               ) : (
-                <>: {wholeGBP(result.monthlyContribution - averageMonthly)} a month short of this goal.</>
+                <>: {wholeGBP(result.monthlyContribution - averageDeposit)} a month short of this goal.</>
               )}
             </p>
           )}
@@ -190,6 +205,144 @@ export function Simulator({ connected, initialPresets, averageMonthly }: Props) 
 
       <Presets input={input} presets={presets} setPresets={setPresets} onLoad={update} />
     </div>
+  );
+}
+
+const percent = (v: number) => `${v.toFixed(1)}%`;
+
+type ResultView = {
+  label: string;
+  /** The number the headline animates to, and how to show it. */
+  value: number;
+  figure: (value: number) => string;
+  accent: boolean;
+  showYears: boolean;
+  sentence: ReactNode;
+};
+
+/** The headline and explanation for whichever number the simulator is working out. */
+function describeResult(input: SimulatorInput, result: SimulatorResult): ResultView {
+  const goal = compactGBP(input.goalAmount);
+  const perMonth = `${wholeGBP(result.monthlyContribution)} a month`;
+  const contributed = (
+    <>
+      You&apos;d contribute {wholeGBP(input.lumpSum + result.monthlyContribution * result.months)} in total; growth
+      covers the rest.
+    </>
+  );
+
+  if (input.mode === "value") {
+    const difference = result.finalValue - input.goalAmount;
+    return {
+      label: `By ${input.targetAge} you'd have`,
+      value: result.finalValue,
+      figure: wholeGBP,
+      accent: false,
+      showYears: true,
+      sentence: (
+        <>
+          {difference >= 0 ? (
+            <span className="text-accent">
+              {wholeGBP(difference)} past your {goal} goal.
+            </span>
+          ) : (
+            <>
+              {wholeGBP(-difference)} short of your {goal} goal.
+            </>
+          )}{" "}
+          {contributed}
+        </>
+      ),
+    };
+  }
+
+  if (input.mode === "age") {
+    if (result.reachAge === null) {
+      const last = LIMITS.targetAge.max;
+      return {
+        label: `Reaching ${goal}`,
+        value: 0,
+        figure: () => `Not by ${last}`,
+        accent: false,
+        showYears: false,
+        sentence: `Not reached by ${last} at ${perMonth}. Invest more each month or add a lump sum.`,
+      };
+    }
+    return {
+      label: `You'd reach ${goal} at`,
+      value: result.reachAge,
+      figure: String,
+      accent: false,
+      showYears: true,
+      sentence: (
+        <>
+          {perMonth} at {percent(input.rate)} a year reaches {wholeGBP(input.goalAmount)} in {result.years} years.{" "}
+          {contributed}
+        </>
+      ),
+    };
+  }
+
+  if (result.goalReachedByLumpSum) {
+    return {
+      label: "Monthly needed",
+      value: 0,
+      figure: wholeGBP,
+      accent: true,
+      showYears: true,
+      sentence: (
+        <span className="text-accent">
+          Your lump sum alone is on track to reach {goal} by {input.targetAge}, growing to about{" "}
+          {wholeGBP(result.lumpFutureValue)}. No monthly contributions needed.
+        </span>
+      ),
+    };
+  }
+  return {
+    label: "Invest each month",
+    value: result.monthlyContribution,
+    figure: wholeGBP,
+    accent: false,
+    showYears: true,
+    sentence: (
+      <>
+        {perMonth} for {result.years} years, at {percent(input.rate)} a year, reaches {wholeGBP(input.goalAmount)} by
+        age {input.targetAge}. {contributed}
+      </>
+    ),
+  };
+}
+
+/** What a preset is about, in its own mode's terms: "£1.5M by 55", "£500/month to 55" or "£1.5M at £500/month". */
+function presetSummary(p: Preset): string {
+  const monthly = `${compactGBP(p.monthly)}/month`;
+  if (p.mode === "value") return `${monthly} to ${p.targetAge}`;
+  if (p.mode === "age") return `${compactGBP(p.goalAmount)} at ${monthly}`;
+  return `${compactGBP(p.goalAmount)} by ${p.targetAge}`;
+}
+
+function ModeSwitch({ mode, onChange }: { mode: SimulatorMode; onChange: (mode: SimulatorMode) => void }) {
+  return (
+    <fieldset>
+      <legend className="text-sm text-ink-muted">Work out</legend>
+      <div className="mt-2 flex rounded-sm border border-rule">
+        {MODES.map((m) => (
+          <label key={m} className="flex-1 border-l border-rule first:border-l-0">
+            <input
+              type="radio"
+              name="simulator-mode"
+              value={m}
+              checked={mode === m}
+              onChange={() => onChange(m)}
+              className="peer sr-only"
+            />
+            <span className="block cursor-pointer px-2 py-2 text-center text-sm text-ink-muted peer-checked:bg-accent peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+              {MODE_LABELS[m]}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -272,8 +425,7 @@ function Presets({
               <div>
                 <span className="font-medium">{p.name}</span>
                 <span className="ml-3 text-sm text-ink-muted tabular-nums">
-                  {compactGBP(p.goalAmount)} by {p.targetAge} · from {p.currentAge} · {p.rate}% ·{" "}
-                  {compactGBP(p.lumpSum)} now
+                  {presetSummary(p)} · from {p.currentAge} · {p.rate}% · {compactGBP(p.lumpSum)} now
                 </span>
               </div>
               <div className="flex gap-4">
