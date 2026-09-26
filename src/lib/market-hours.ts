@@ -1,6 +1,6 @@
 import type { ScheduleEvent } from "@/lib/t212/normalise";
 
-export type SessionState = { open: boolean; lastClose: string | null; nextOpen: string | null };
+export type SessionState = { open: boolean; nextOpen: string | null };
 export type MarketStatus = SessionState & { exchange: string };
 
 // Only the regular session: pre-market, after-hours and overnight trading count as closed.
@@ -11,14 +11,13 @@ const SESSION = new Set(["OPEN", "CLOSE", "BREAK_START", "BREAK_END"]);
 export function sessionState(events: ScheduleEvent[], now = new Date()): SessionState | null {
   const t = now.getTime();
   const session = events.filter((e) => SESSION.has(e.type));
-  const past = session.filter((e) => Date.parse(e.at) <= t);
-  const latest = past.at(-1);
+  const latest = session.findLast((e) => Date.parse(e.at) <= t);
   if (!latest) return null;
 
   const nextOpen = session.find((e) => e.type === "OPEN" && Date.parse(e.at) > t)?.at ?? null;
   const open = OPENS.has(latest.type);
   if (!open && !nextOpen) return null;
-  return { open, lastClose: past.findLast((e) => e.type === "CLOSE")?.at ?? null, nextOpen };
+  return { open, nextOpen };
 }
 
 /** "London Stock Exchange closed · reopens Mon 08:00", or null while every market is open. */

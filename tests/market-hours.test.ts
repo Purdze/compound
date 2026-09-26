@@ -26,7 +26,7 @@ test("closed during a break", () => {
 
 test("after-hours trading counts as closed, and the weekend points to Monday's open", () => {
   const evening = at("2026-09-26T17:00:00Z");
-  expect(evening).toEqual({ open: false, lastClose: "2026-09-26T15:30:00Z", nextOpen: "2026-09-29T07:00:00Z" });
+  expect(evening).toEqual({ open: false, nextOpen: "2026-09-29T07:00:00Z" });
   expect(at("2026-09-27T12:00:00Z")).toEqual(evening);
 });
 
@@ -37,8 +37,8 @@ test("unknown outside the schedule it was given", () => {
 });
 
 test("describeMarkets says nothing while open, and names what's closed", () => {
-  const lse = { exchange: "London Stock Exchange", lastClose: null, nextOpen: "2026-09-29T07:00:00Z" };
-  const nyse = { exchange: "NYSE", lastClose: null, nextOpen: "2026-09-28T13:30:00Z" };
+  const lse = { exchange: "London Stock Exchange", nextOpen: "2026-09-29T07:00:00Z" };
+  const nyse = { exchange: "NYSE", nextOpen: "2026-09-28T13:30:00Z" };
   const time = (iso: string) => iso.slice(8, 16);
   expect(describeMarkets([{ ...lse, open: true }], time)).toBeNull();
   expect(describeMarkets([{ ...lse, open: false }], time)).toBe("London Stock Exchange closed · reopens 29T07:00");

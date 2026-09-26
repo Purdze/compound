@@ -1,7 +1,7 @@
 import "server-only";
 import { TtlCache } from "@/lib/cache";
 import { sessionState, type MarketStatus } from "@/lib/market-hours";
-import { loadUserCredentials, parseResponse, t212Get } from "./client";
+import { loadUserCredentials, t212Read } from "./client";
 import { normaliseExchanges, normaliseInstrumentSchedules, type Schedule } from "./normalise";
 
 const HOUR = 60 * 60_000;
@@ -22,8 +22,7 @@ function loadInBackground<T>(
       try {
         const creds = await loadUserCredentials(userId);
         if (!creds) return null;
-        const raw = await t212Get<unknown>(creds, path, userId);
-        return parseResponse(() => parse(raw));
+        return await t212Read(creds, path, userId, parse);
       } catch {
         return null;
       }
