@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { UpdateInfo } from "@/lib/updates";
-import { Button } from "./ui";
+import { Button, HeaderNotice } from "./ui";
 import { UpdateDetails } from "./UpdateDetails";
 
 const DISMISSED_KEY = "compound:dismissed-update";
@@ -28,12 +28,12 @@ export function UpdateBanner({ update }: { update: UpdateInfo }) {
   }
 
   return (
-    <div className="border-b border-rule py-3 text-sm" role="status">
+    <HeaderNotice>
       <UpdateDetails update={update}>
         <Button variant="quiet" onClick={dismiss}>
           Dismiss
         </Button>
       </UpdateDetails>
-    </div>
+    </HeaderNotice>
   );
 }

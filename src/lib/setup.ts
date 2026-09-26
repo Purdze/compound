@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { hashPassword } from "@/lib/password";
 import type { SessionBinding } from "@/lib/session";
 
@@ -23,7 +24,13 @@ export async function completeSetup(input: {
   password: string;
   updateCheck: boolean;
 }): Promise<SessionBinding | null> {
-  const data = { name: input.name, passwordHash: await hashPassword(input.password), updateCheck: input.updateCheck };
+  const data = {
+    name: input.name,
+    passwordHash: await hashPassword(input.password),
+    updateCheck: input.updateCheck,
+    // A new install has nothing new to announce.
+    lastSeenVersion: env().APP_VERSION,
+  };
   const select = { sessionEpoch: true } as const;
   // An owner row without a password exists after `compound-reset-password`.
   const { count } = await db.user.updateMany({ where: { id: OWNER_ID, passwordHash: null }, data });

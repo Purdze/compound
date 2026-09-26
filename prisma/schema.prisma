@@ -11,13 +11,15 @@ datasource db {
 // Compound is single-user: one row with id "owner", created by the setup wizard
 // (see src/lib/setup.ts). No passwordHash means setup hasn't been completed.
 model User {
-  id           String   @id
-  name         String?
-  passwordHash String?
-  updateCheck  Boolean  @default(true)
+  id              String   @id
+  name            String?
+  passwordHash    String?
+  updateCheck     Boolean  @default(true)
   // Bumped by "Sign out everywhere"; part of every session signature.
-  sessionEpoch Int      @default(0)
-  createdAt    DateTime @default(now())
+  sessionEpoch    Int      @default(0)
+  // The version whose "What's new" the owner has seen; null on installs set up before it existed.
+  lastSeenVersion String?
+  createdAt       DateTime @default(now())
 
   apiKey           ApiKey?
   usageLogs        ApiKeyUsageLog[]
@@ -29,12 +31,12 @@ model User {
 // One Trading 212 credential for the owner. `encryptedKey` holds AES-256-GCM ciphertext
 // followed by the 16-byte auth tag; the plaintext is JSON {key, secret}.
 model ApiKey {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  encryptedKey Bytes
-  iv           Bytes
-  createdAt    DateTime  @default(now())
-  lastUsedAt   DateTime?
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  encryptedKey         Bytes
+  iv                   Bytes
+  createdAt            DateTime  @default(now())
+  lastUsedAt           DateTime?
   // Set once a full walk of the transaction history has been stored.
   transactionsSyncedAt DateTime?
   // The T212ErrorCode (or MISSING_PERMISSION) from the last failed sync.

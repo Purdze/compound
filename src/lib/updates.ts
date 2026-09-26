@@ -7,7 +7,7 @@ import { DEV_VERSION, versionTag } from "@/lib/version";
 const REPO = "Purdze/compound";
 const RELEASES_API = `https://api.github.com/repos/${REPO}/releases/latest`;
 
-export function releaseNotesUrl(version: string): string {
+function releaseNotesUrl(version: string): string {
   return `https://github.com/${REPO}/releases/tag/${versionTag(version)}`;
 }
 

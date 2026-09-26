@@ -2,13 +2,16 @@ import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { SignOutButton } from "@/components/SignOutButton";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { UpdatedNotice } from "@/components/UpdatedNotice";
 import { VuagTicker } from "@/components/VuagTicker";
 import { requireOwner } from "@/lib/auth";
 import { availableUpdate } from "@/lib/updates";
+import { unseenUpdate } from "@/lib/whats-new";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const owner = await requireOwner();
   const update = availableUpdate(owner.updateCheck);
+  const updatedTo = unseenUpdate(owner.lastSeenVersion);
 
   return (
     <div className="mx-auto max-w-6xl px-6">
@@ -24,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SignOutButton />
         </div>
       </header>
+      {updatedTo && <UpdatedNotice version={updatedTo} />}
       {update && <UpdateBanner update={update} />}
       <main className="pb-24">{children}</main>
     </div>

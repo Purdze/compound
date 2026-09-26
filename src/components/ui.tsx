@@ -3,7 +3,20 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variant = "primary" | "secondary" | "danger" | "quiet";
 
 export const API_KEY_SETTINGS = "/settings#api-key";
+export const WHATS_NEW = "/whats-new";
 export const T212_APP_URL = "https://app.trading212.com/";
+
+/** Text and inline actions on one line, wrapping on narrow screens. */
+export const actionRowClass = "flex flex-wrap items-baseline gap-x-6 gap-y-2";
+
+/** A one-line notice under the header, such as the update banner. */
+export function HeaderNotice({ children }: { children: ReactNode }) {
+  return (
+    <div className="border-b border-rule py-3 text-sm" role="status">
+      {children}
+    </div>
+  );
+}
 
 export const linkClass =
   "text-ink-muted underline underline-offset-4 decoration-rule hover:text-ink hover:decoration-ink-muted";
