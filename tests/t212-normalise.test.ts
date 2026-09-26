@@ -3,6 +3,8 @@ import {
   displayTicker,
   findVuag,
   normalisePositions,
+  normaliseExchanges,
+  normaliseInstrumentSchedules,
   normaliseSummary,
   normaliseTransactions,
 } from "../src/lib/t212/normalise";
@@ -131,4 +133,43 @@ describe("normaliseTransactions", () => {
   test("throws without items", () => {
     expect(() => normaliseTransactions([])).toThrow();
   });
+});
+
+test("normaliseInstrumentSchedules maps tickers to schedules and skips bad items", () => {
+  const map = normaliseInstrumentSchedules([
+    { ticker: "VUAGl_EQ", workingScheduleId: 71, name: "S&P 500" },
+    { ticker: "BAD_EQ" },
+    null,
+  ]);
+  expect([...map]).toEqual([["VUAGl_EQ", 71]]);
+  expect(() => normaliseInstrumentSchedules({})).toThrow();
+});
+
+test("normaliseExchanges sorts each schedule's events and skips bad ones", () => {
+  const map = normaliseExchanges([
+    {
+      id: 1,
+      name: "London Stock Exchange",
+      workingSchedules: [
+        {
+          id: 71,
+          timeEvents: [
+            { date: "2026-09-29T15:30:00Z", type: "CLOSE" },
+            { date: "2026-09-29T07:00:00Z", type: "OPEN" },
+            { date: "not a date", type: "OPEN" },
+            { type: "CLOSE" },
+          ],
+        },
+      ],
+    },
+    { id: 2, workingSchedules: [] },
+  ]);
+  expect(map.get(71)).toEqual({
+    exchange: "London Stock Exchange",
+    events: [
+      { at: "2026-09-29T07:00:00Z", type: "OPEN" },
+      { at: "2026-09-29T15:30:00Z", type: "CLOSE" },
+    ],
+  });
+  expect(map.size).toBe(1);
 });

@@ -90,6 +90,17 @@ export function parseResponse<T>(parse: () => T): T {
   }
 }
 
+/** Fetches a Trading 212 endpoint and parses it into Compound's own shape. */
+export async function t212Read<T>(
+  creds: T212Credentials,
+  path: string,
+  userId: string,
+  parse: (raw: unknown) => T,
+): Promise<T> {
+  const raw = await t212Get<unknown>(creds, path, userId);
+  return parseResponse(() => parse(raw));
+}
+
 async function audit(userId: string, endpoint: string, status: number, ok: boolean) {
   try {
     await db.apiKeyUsageLog.create({ data: { userId, endpoint, status } });

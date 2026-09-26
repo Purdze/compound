@@ -4,6 +4,7 @@ What's changed in each version of Compound. To update, run `docker compose pull 
 
 ## Unreleased
 
+- Compound says when the markets for your holdings are closed, next to the prices, so a price that isn't moving makes sense. It needs the optional **Metadata** permission on your key.
 - **What's new** page, linked from the bottom of Settings, listing the changes in each version.
 - After an update, Compound shows a one-time note with a link to what's new.
 

@@ -31,7 +31,10 @@ export function VuagTicker() {
     <div className="text-sm" aria-live="polite" title={`As of ${asOf}`}>
       <span className="font-medium">VUAG</span>{" "}
       <span className="figure">{money(vuag.price, vuag.currency ?? undefined)}</span>{" "}
-      <span className="text-ink-muted">at {asOf.slice(0, 5)}</span>
+      <span className="text-ink-muted">
+        at {asOf.slice(0, 5)}
+        {vuag.marketOpen === false && " · market closed"}
+      </span>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Greeting } from "@/components/Greeting";
 import { LocalTime } from "@/components/LocalTime";
+import { MarketsNote } from "@/components/MarketsNote";
 import { RefreshCountdown } from "@/components/RefreshCountdown";
 import {
   API_KEY_SETTINGS,
@@ -20,6 +21,7 @@ import { requireOwner } from "@/lib/auth";
 import { realReturn, summariseDeposits } from "@/lib/deposits";
 import { money, quantity, signedMoney, signedPercent } from "@/lib/format";
 import { displayTicker, type CashTransaction, type Portfolio } from "@/lib/t212/normalise";
+import { marketStatus } from "@/lib/t212/markets";
 import { getPortfolio, nextPortfolioRefresh } from "@/lib/t212/portfolio";
 import { depositHistory } from "@/lib/t212/transactions";
 
@@ -29,6 +31,13 @@ export default async function DashboardPage() {
   const { id: userId, name } = await requireOwner();
   const [result, history] = await Promise.all([getPortfolio(userId), depositHistory(userId)]);
   const next = nextPortfolioRefresh(userId);
+  const markets =
+    result.status === "ok"
+      ? marketStatus(
+          userId,
+          result.portfolio.positions.map((p) => p.ticker),
+        )
+      : null;
 
   return (
     <div className="pt-12">
@@ -37,6 +46,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl">Portfolio</h1>
         {result.status === "ok" && (
           <div className="flex items-baseline gap-4 text-sm text-ink-muted">
+            {markets && <MarketsNote markets={markets} />}
             <span>
               Last updated <LocalTime iso={result.portfolio.fetchedAt} />
             </span>
